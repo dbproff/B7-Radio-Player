@@ -2,6 +2,9 @@
 
 An open-source Android internet radio player built with AndroidX Media3.
 
+## Screenshot
+<img src="main_screen_preview.png" alt="B7 Radio Player Main Screen" width="320" />
+
 ## Features
 - Stream live internet radio stations (MP3, AAC, M3U, PLS)
 - Search and add stations via Radio Browser
