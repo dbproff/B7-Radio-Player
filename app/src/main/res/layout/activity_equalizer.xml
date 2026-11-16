@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/app_background"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Unified Top Bar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="20dp">
+
+            <ImageButton
+                android:id="@+id/backButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/return_to_main"
+                android:padding="12dp"
+                android:src="@drawable/ic_return"
+                app:tint="@color/app_text_primary" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="@string/sound_equalizer"
+                android:textColor="@color/app_text_primary"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/eqResetButton"
+                style="?android:attr/borderlessButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Reset"
+                android:textAllCaps="false"
+                android:textColor="@color/app_accent" />
+        </LinearLayout>
+
+        <!-- Presets -->
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:layout_marginBottom="20dp">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/presetFlat"
+                    style="?android:attr/buttonStyleSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:text="Flat"
+                    android:textAllCaps="false" />
+
+                <Button
+                    android:id="@+id/presetBass"
+                    style="?android:attr/buttonStyleSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:text="Bass Boost"
+                    android:textAllCaps="false" />
+
+                <Button
+                    android:id="@+id/presetVocal"
+                    style="?android:attr/buttonStyleSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:text="Vocal"
+                    android:textAllCaps="false" />
+
+                <Button
+                    android:id="@+id/presetRock"
+                    style="?android:attr/buttonStyleSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:text="Rock"
+                    android:textAllCaps="false" />
+
+                <Button
+                    android:id="@+id/presetJazz"
+                    style="?android:attr/buttonStyleSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Jazz"
+                    android:textAllCaps="false" />
+            </LinearLayout>
+        </HorizontalScrollView>
+
+        <!-- Bass -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="8dp">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/bass_label"
+                android:textColor="@color/app_text_primary"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/bassValueText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 dB"
+                android:textColor="@color/app_accent"
+                android:textSize="13sp" />
+        </LinearLayout>
+        <SeekBar
+            android:id="@+id/bassSeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="3000"
+            android:progress="1500"
+            android:layout_marginBottom="20dp" />
+
+        <!-- Mid -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="8dp">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/mid_label"
+                android:textColor="@color/app_text_primary"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/midValueText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 dB"
+                android:textColor="@color/app_accent"
+                android:textSize="13sp" />
+        </LinearLayout>
+        <SeekBar
+            android:id="@+id/midSeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="3000"
+            android:progress="1500"
+            android:layout_marginBottom="20dp" />
+
+        <!-- Treble -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="8dp">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/treble_label"
+                android:textColor="@color/app_text_primary"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/trebleValueText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 dB"
+                android:textColor="@color/app_accent"
+                android:textSize="13sp" />
+        </LinearLayout>
+        <SeekBar
+            android:id="@+id/trebleSeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="3000"
+            android:progress="1500"
+            android:layout_marginBottom="20dp" />
+
+        <!-- Volume -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="8dp">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/volume_label"
+                android:textColor="@color/app_text_primary"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/volumeValueText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="50%"
+                android:textColor="@color/app_accent"
+                android:textSize="13sp" />
+        </LinearLayout>
+        <SeekBar
+            android:id="@+id/volumeSeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp" />
+
+    </LinearLayout>
+</ScrollView>

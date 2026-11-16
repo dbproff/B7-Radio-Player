@@ -1,0 +1,44 @@
+<Screamer version="Screamer Radio Favorites">
+ <Station title="Absolute Country" url="www.1.fm">
+  <Source>http://prmstrm.1.fm:8000/acountry</Source>
+ </Station>
+ <Station title="Back to the 80s" url="www.1.fm">
+  <Source>http://prmstrm.1.fm:8000/back280s</Source>
+ </Station>
+ <Station title="Blues" url="">
+  <Source>https://strm112.1.fm/blues_mobile_mp3</Source>
+ </Station>
+ <Station title="Classic Country" url="www.1.fm">
+  <Source>http://prmstrm.1.fm:8000/ccountry</Source>
+ </Station>
+ <Station title="Classical 1.fm" url="Classical 1.fm">
+  <Source>https://strm112.1.fm/classical_mobile_mp3</Source>
+ </Station>
+ <Station title="Disco Ball 70's - 80's" url="www.1.fm">
+  <Source>http://prmstrm.1.fm:8000/disco</Source>
+ </Station>
+ <Station title="Essential Classics (Poland)" url="https://radio.1cloud.fm/station/classicalessentials">">
+  <Source>https://strm112.1.fm/polskafm_mobile_mp3</Source>
+ </Station>
+ <Station title="Jazz90.1 WGMC-FM" url="http://www.jazz901.org">
+  <Source>http://greece-media.monroe.edu/wgmc.mp3</Source>
+ </Station>
+ <Station title="Just The Best Music (Germany) " url="">
+  <Source>https://justthebestmusic.stream.laut.fm/just_the_best_music</Source>
+ </Station>
+ <Station title="Magic Radio" url="https://magic-radio.net">
+  <Source>http://mp3.magic-radio.net:80/</Source>
+ </Station>
+ <Station title="Radio Retro FM (Estonia)" url="http://www.altacast.com">
+  <Source>http://skymedia-live.bitflip.ee/retro2.mp3</Source>
+ </Station>
+ <Station title="Staroe Radio" url="https://www.staroeradio.ru">
+  <Source>http://server.audiopedia.su:8000/ices128</Source>
+ </Station>
+ <Station title="Super Retro (Estonia)" url="https://superradio.sky.ee/">
+  <Source>http://skymedia-live.bitflip.ee/rrretro</Source>
+ </Station>
+ <Station title="Zoomer Radio" url="">
+  <Source>https://prod-54-166-216-244.amperwave.net/mzmedia-cfzmammp3-ibc2</Source>
+</Station>
+</Screamer>

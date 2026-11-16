@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="app_background">#FF121212</color>
+    <color name="app_surface">#FF1E1E24</color>
+    <color name="app_pill_bg">#22FFFFFF</color>
+    <color name="app_text_primary">#FFFFFFFF</color>
+    <color name="app_text_secondary">#FF888888</color>
+    <color name="app_accent">#FFBB86FC</color>
+    <color name="app_divider">#FF333333</color>
+    <color name="app_selected_row">#33FFFFFF</color>
+    <color name="app_edit_bg">#22FFFFFF</color>
+</resources>

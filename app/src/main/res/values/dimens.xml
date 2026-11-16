@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="player_btn_size">40dp</dimen>
+    <dimen name="player_btn_padding">6dp</dimen>
+    <dimen name="player_play_size">48dp</dimen>
+    <dimen name="player_play_margin">2dp</dimen>
+    <dimen name="player_eq_margin">2dp</dimen>
+</resources>
