@@ -1,0 +1,2 @@
+- Browse internet radio stations by country and genre (Radio Browser)
+- Added controls & highlights color presets and custom color picker in Settings
