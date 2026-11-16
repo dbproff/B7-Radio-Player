@@ -10,6 +10,8 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
@@ -24,17 +26,74 @@ public final class RadioBrowserClient {
     };
     private static final String USER_AGENT = "RadioPlayer/1.0 (Android)";
 
+    public static final class CountryInfo {
+        public final String name;
+        public final String isoCode;
+        public final int stationCount;
+
+        public CountryInfo(String name, String isoCode, int stationCount) {
+            this.name = name;
+            this.isoCode = isoCode;
+            this.stationCount = stationCount;
+        }
+
+        @Override
+        public String toString() {
+            if (isoCode == null || isoCode.isEmpty()) {
+                return name;
+            }
+            return name + " (" + stationCount + ")";
+        }
+    }
+
     private RadioBrowserClient() {}
 
     public static List<RadioStationParser.RadioStation> searchStations(String query) throws IOException {
-        String encoded = URLEncoder.encode(query != null ? query.trim() : "", "UTF-8");
-        String path = "/json/stations/search?name=" + encoded + "&limit=40&hidebroken=true&order=clickcount&reverse=true";
+        return searchStations(query, null);
+    }
 
+    public static List<RadioStationParser.RadioStation> searchStations(String query, String countryCode) throws IOException {
+        String trimmedQuery = query != null ? query.trim() : "";
+        String trimmedCountry = countryCode != null ? countryCode.trim() : "";
+
+        StringBuilder path = new StringBuilder("/json/stations/search?limit=60&hidebroken=true&order=clickcount&reverse=true");
+        if (!trimmedQuery.isEmpty()) {
+            path.append("&name=").append(URLEncoder.encode(trimmedQuery, "UTF-8"));
+        }
+        if (!trimmedCountry.isEmpty()) {
+            path.append("&countrycode=").append(URLEncoder.encode(trimmedCountry, "UTF-8"));
+        }
+
+        String json = fetchFromAnyHost(path.toString());
+        return parseRadioBrowserJson(json);
+    }
+
+    public static List<CountryInfo> fetchCountries() throws IOException {
+        String json = fetchFromAnyHost("/json/countries?order=name&hidebroken=true");
+        List<CountryInfo> countries = new ArrayList<>();
+        try {
+            JSONArray array = new JSONArray(json);
+            for (int i = 0; i < array.length(); i++) {
+                JSONObject obj = array.optJSONObject(i);
+                if (obj == null) continue;
+                String name = obj.optString("name", "").trim();
+                String iso = obj.optString("iso_3166_1", "").trim();
+                int count = obj.optInt("stationcount", 0);
+                if (name.isEmpty() || iso.isEmpty() || count <= 0) continue;
+                countries.add(new CountryInfo(name, iso, count));
+            }
+        } catch (Exception e) {
+            throw new IOException("Failed to parse countries", e);
+        }
+        Collections.sort(countries, Comparator.comparing(c -> c.name.toLowerCase(Locale.US)));
+        return countries;
+    }
+
+    private static String fetchFromAnyHost(String path) throws IOException {
         IOException lastError = null;
         for (String host : API_HOSTS) {
             try {
-                String json = fetchText(host + path);
-                return parseRadioBrowserJson(json);
+                return fetchText(host + path);
             } catch (IOException e) {
                 lastError = e;
             }

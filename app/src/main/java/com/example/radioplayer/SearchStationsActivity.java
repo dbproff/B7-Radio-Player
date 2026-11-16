@@ -5,12 +5,14 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -27,12 +29,16 @@ public class SearchStationsActivity extends AppCompatActivity {
 
     private EditText searchQueryEdit;
     private Button searchActionButton;
+    private Spinner countrySpinner;
     private ProgressBar searchProgress;
     private TextView searchStatusText;
     private ListView searchResultsList;
     private final List<RadioStationParser.RadioStation> results = new ArrayList<>();
     private final ArrayList<RadioStationParser.RadioStation> addedStations = new ArrayList<>();
     private final Set<String> addedSources = new HashSet<>();
+    private final List<RadioBrowserClient.CountryInfo> countries = new ArrayList<>();
+    private ArrayAdapter<RadioBrowserClient.CountryInfo> countryAdapter;
+    private String lastSelectedCountryCode = "";
     private SearchAdapter adapter;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -43,6 +49,7 @@ public class SearchStationsActivity extends AppCompatActivity {
 
         searchQueryEdit = findViewById(R.id.searchQueryEdit);
         searchActionButton = findViewById(R.id.searchActionButton);
+        countrySpinner = findViewById(R.id.countrySpinner);
         searchProgress = findViewById(R.id.searchProgress);
         searchStatusText = findViewById(R.id.searchStatusText);
         searchResultsList = findViewById(R.id.searchResultsList);
@@ -52,6 +59,31 @@ public class SearchStationsActivity extends AppCompatActivity {
 
         adapter = new SearchAdapter();
         searchResultsList.setAdapter(adapter);
+
+        countries.add(new RadioBrowserClient.CountryInfo("All Countries", "", 0));
+        countryAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, countries);
+        countryAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        countrySpinner.setAdapter(countryAdapter);
+        countrySpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                RadioBrowserClient.CountryInfo selected = getSelectedCountry();
+                String code = selected != null ? selected.isoCode : "";
+                if (code.equals(lastSelectedCountryCode)) {
+                    return;
+                }
+                lastSelectedCountryCode = code;
+                String query = searchQueryEdit.getText().toString().trim();
+                if (!code.isEmpty() || !query.isEmpty()) {
+                    runSearch();
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+
+        loadCountries();
 
         searchActionButton.setOnClickListener(v -> runSearch());
         searchQueryEdit.setOnEditorActionListener((v, actionId, event) -> {
@@ -69,19 +101,50 @@ public class SearchStationsActivity extends AppCompatActivity {
         });
     }
 
+    private RadioBrowserClient.CountryInfo getSelectedCountry() {
+        Object item = countrySpinner.getSelectedItem();
+        if (item instanceof RadioBrowserClient.CountryInfo) {
+            return (RadioBrowserClient.CountryInfo) item;
+        }
+        return null;
+    }
+
+    private void loadCountries() {
+        executor.execute(() -> {
+            try {
+                List<RadioBrowserClient.CountryInfo> fetched = RadioBrowserClient.fetchCountries();
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    countries.clear();
+                    countries.add(new RadioBrowserClient.CountryInfo("All Countries", "", 0));
+                    countries.addAll(fetched);
+                    countryAdapter.notifyDataSetChanged();
+                });
+            } catch (Exception ignored) {
+                // Keep "All Countries" available even if country list fetch fails
+            }
+        });
+    }
+
     private void runSearch() {
         String query = searchQueryEdit.getText().toString().trim();
-        if (query.isEmpty()) {
-            searchQueryEdit.setError("Enter a station name");
+        RadioBrowserClient.CountryInfo selectedCountry = getSelectedCountry();
+        String countryCode = selectedCountry != null ? selectedCountry.isoCode : "";
+
+        if (query.isEmpty() && countryCode.isEmpty()) {
+            searchQueryEdit.setError("Enter a station name or select a country");
             return;
         }
+        searchQueryEdit.setError(null);
         searchProgress.setVisibility(View.VISIBLE);
         searchActionButton.setEnabled(false);
-        searchStatusText.setText("Searching radio-browser.info...");
+        searchStatusText.setText(countryCode.isEmpty()
+                ? "Searching radio-browser.info..."
+                : "Loading stations for " + selectedCountry.name + "...");
 
         executor.execute(() -> {
             try {
-                List<RadioStationParser.RadioStation> found = RadioBrowserClient.searchStations(query);
+                List<RadioStationParser.RadioStation> found = RadioBrowserClient.searchStations(query, countryCode);
                 runOnUiThread(() -> {
                     if (isFinishing() || isDestroyed()) return;
                     searchProgress.setVisibility(View.GONE);
@@ -89,9 +152,11 @@ public class SearchStationsActivity extends AppCompatActivity {
                     results.clear();
                     results.addAll(found);
                     adapter.notifyDataSetChanged();
-                    searchStatusText.setText(found.isEmpty()
-                            ? "No stations found for \"" + query + "\""
-                            : "Found " + found.size() + " stations. Tap Add to import.");
+                    if (found.isEmpty()) {
+                        searchStatusText.setText("No stations found.");
+                    } else {
+                        searchStatusText.setText("Found " + found.size() + " stations. Tap Add to import.");
+                    }
                 });
             } catch (Exception e) {
                 runOnUiThread(() -> {
