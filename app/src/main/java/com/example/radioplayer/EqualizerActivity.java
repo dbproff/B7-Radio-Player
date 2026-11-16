@@ -60,6 +60,19 @@ public class EqualizerActivity extends AppCompatActivity {
         audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
         setupVolumeControl();
         setupEqualizerControls();
+        applyAccentColor();
+    }
+
+    private void applyAccentColor() {
+        int accent = ThemeHelper.getAccentColor(this);
+        if (bassValueText != null) bassValueText.setTextColor(accent);
+        if (midValueText != null) midValueText.setTextColor(accent);
+        if (trebleValueText != null) trebleValueText.setTextColor(accent);
+        if (volumeValueText != null) volumeValueText.setTextColor(accent);
+        ThemeHelper.tintSeekBar(bassSeekBar, accent);
+        ThemeHelper.tintSeekBar(midSeekBar, accent);
+        ThemeHelper.tintSeekBar(trebleSeekBar, accent);
+        ThemeHelper.tintSeekBar(volumeSeekBar, accent);
     }
 
     private void applyPreset(int bass, int mid, int treble) {

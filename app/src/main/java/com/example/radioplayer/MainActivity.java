@@ -3,6 +3,7 @@ package com.example.radioplayer;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -33,6 +34,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.core.widget.ImageViewCompat;
 import androidx.media3.common.C;
 import androidx.media3.common.Format;
 import androidx.media3.common.MediaItem;
@@ -216,6 +218,7 @@ public class MainActivity extends AppCompatActivity {
 
         stationAdapter = new StationAdapter(this, displayedStations);
         stationListView.setAdapter(stationAdapter);
+        applyAccentColor();
 
         stationListView.setOnItemClickListener((parent, view, position, id) -> {
             if (position >= 0 && position < displayedStations.size()) {
@@ -313,6 +316,30 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         syncVolumeSlider();
+        applyAccentColor();
+    }
+
+    private void applyAccentColor() {
+        int accent = ThemeHelper.getAccentColor(this);
+        if (playPauseButton != null) {
+            ImageViewCompat.setImageTintList(playPauseButton, ColorStateList.valueOf(accent));
+        }
+        if (songTitleView != null) {
+            songTitleView.setTextColor(accent);
+        }
+        if (sleepTimerStatus != null) {
+            sleepTimerStatus.setTextColor(accent);
+        }
+        if (stationsTabIndicator != null) {
+            stationsTabIndicator.setBackgroundColor(accent);
+        }
+        if (favoritesTabIndicator != null) {
+            favoritesTabIndicator.setBackgroundColor(accent);
+        }
+        ThemeHelper.tintSeekBar(mainVolumeSeekBar, accent);
+        if (stationAdapter != null) {
+            stationAdapter.notifyDataSetChanged();
+        }
     }
 
     @Override
@@ -987,10 +1014,14 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
 
+            int accent = ThemeHelper.getAccentColor(MainActivity.this);
+            holder.favIcon.setTextColor(accent);
+            holder.nowPlayingIndicator.setBackgroundColor(accent);
+
             boolean isCurrent = currentStation != null && Objects.equals(currentStation.source, station.source);
             holder.nowPlayingIndicator.setVisibility(isCurrent ? View.VISIBLE : View.INVISIBLE);
             if (isCurrent) {
-                convertView.setBackgroundColor(ContextCompat.getColor(MainActivity.this, R.color.app_selected_row));
+                convertView.setBackgroundColor(ThemeHelper.getSelectedRowColor(MainActivity.this));
             } else {
                 convertView.setBackgroundColor(Color.TRANSPARENT);
             }

@@ -2,20 +2,26 @@ package com.example.radioplayer;
 
 import android.content.Intent;
 import android.content.pm.PackageInfo;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -36,6 +42,11 @@ public class SettingsActivity extends AppCompatActivity {
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private boolean stationsChanged = false;
+    private View accentPreviewSwatch;
+    private TextView accentCurrentLabel;
+    private LinearLayout accentPresetsContainer;
+    private TextView settingsThemeHeader, settingsAccentHeader, settingsLibraryHeader, settingsAboutHeader;
+    private RadioButton themeSystemRadio, themeDarkRadio, themeLightRadio;
 
     private final ActivityResultLauncher<String[]> importDocumentLauncher = registerForActivityResult(
             new ActivityResultContracts.OpenDocument(),
@@ -85,6 +96,21 @@ public class SettingsActivity extends AppCompatActivity {
             }
         });
 
+        settingsThemeHeader = findViewById(R.id.settingsThemeHeader);
+        settingsAccentHeader = findViewById(R.id.settingsAccentHeader);
+        settingsLibraryHeader = findViewById(R.id.settingsLibraryHeader);
+        settingsAboutHeader = findViewById(R.id.settingsAboutHeader);
+        themeSystemRadio = findViewById(R.id.themeSystemRadio);
+        themeDarkRadio = findViewById(R.id.themeDarkRadio);
+        themeLightRadio = findViewById(R.id.themeLightRadio);
+        accentPreviewSwatch = findViewById(R.id.accentPreviewSwatch);
+        accentCurrentLabel = findViewById(R.id.accentCurrentLabel);
+        accentPresetsContainer = findViewById(R.id.accentPresetsContainer);
+
+        findViewById(R.id.settingsCustomColorButton).setOnClickListener(v -> showCustomColorPickerDialog());
+        setupAccentPresets();
+        applySettingsAccent();
+
         findViewById(R.id.settingsImportUrlButton).setOnClickListener(v -> showImportUrlDialog());
         findViewById(R.id.settingsImportFileButton).setOnClickListener(v ->
                 importDocumentLauncher.launch(new String[]{"text/xml", "application/xml", "audio/x-mpegurl", "audio/x-scpls", "*/*"}));
@@ -102,6 +128,168 @@ public class SettingsActivity extends AppCompatActivity {
             }
         } catch (Exception ignored) {}
         versionText.setText("Version " + versionName);
+    }
+
+    private void setupAccentPresets() {
+        if (accentPresetsContainer == null) return;
+        accentPresetsContainer.removeAllViews();
+        float density = getResources().getDisplayMetrics().density;
+        int size = Math.round(36 * density);
+        int margin = Math.round(10 * density);
+        int strokeSelected = Math.round(3 * density);
+        int savedColor = ThemeHelper.getSavedAccentColor(this);
+        int defaultViolet = ContextCompat.getColor(this, R.color.app_accent);
+        int borderColor = ContextCompat.getColor(this, R.color.app_text_primary);
+
+        for (int i = 0; i < ThemeHelper.PRESET_COLORS.length; i++) {
+            final int presetValue = ThemeHelper.PRESET_COLORS[i];
+            int displayColor = (presetValue == 0) ? defaultViolet : presetValue;
+            boolean isSelected = (savedColor == presetValue);
+
+            View swatch = new View(this);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(size, size);
+            lp.setMarginEnd(margin);
+            swatch.setLayoutParams(lp);
+
+            GradientDrawable circle = new GradientDrawable();
+            circle.setShape(GradientDrawable.OVAL);
+            circle.setColor(displayColor);
+            if (isSelected) {
+                circle.setStroke(strokeSelected, borderColor);
+            }
+            swatch.setBackground(circle);
+            swatch.setContentDescription(ThemeHelper.PRESET_NAMES[i]);
+            swatch.setOnClickListener(v -> {
+                ThemeHelper.saveAccentColor(this, presetValue);
+                setupAccentPresets();
+                applySettingsAccent();
+            });
+            accentPresetsContainer.addView(swatch);
+        }
+    }
+
+    private void applySettingsAccent() {
+        int accent = ThemeHelper.getAccentColor(this);
+        int saved = ThemeHelper.getSavedAccentColor(this);
+
+        if (settingsThemeHeader != null) settingsThemeHeader.setTextColor(accent);
+        if (settingsAccentHeader != null) settingsAccentHeader.setTextColor(accent);
+        if (settingsLibraryHeader != null) settingsLibraryHeader.setTextColor(accent);
+        if (settingsAboutHeader != null) settingsAboutHeader.setTextColor(accent);
+
+        ThemeHelper.tintRadioButton(themeSystemRadio, accent);
+        ThemeHelper.tintRadioButton(themeDarkRadio, accent);
+        ThemeHelper.tintRadioButton(themeLightRadio, accent);
+
+        if (accentPreviewSwatch != null) {
+            GradientDrawable circle = new GradientDrawable();
+            circle.setShape(GradientDrawable.OVAL);
+            circle.setColor(accent);
+            circle.setStroke(Math.round(1.5f * getResources().getDisplayMetrics().density),
+                    ContextCompat.getColor(this, R.color.app_divider));
+            accentPreviewSwatch.setBackground(circle);
+        }
+        if (accentCurrentLabel != null) {
+            accentCurrentLabel.setText(ThemeHelper.formatColorName(saved));
+        }
+    }
+
+    private void showCustomColorPickerDialog() {
+        int initialColor = ThemeHelper.getAccentColor(this);
+        final float[] hsv = new float[3];
+        Color.colorToHSV(initialColor, hsv);
+
+        float density = getResources().getDisplayMetrics().density;
+        int pad = Math.round(20 * density);
+
+        LinearLayout container = new LinearLayout(this);
+        container.setOrientation(LinearLayout.VERTICAL);
+        container.setPadding(pad, pad, pad, pad);
+
+        View preview = new View(this);
+        LinearLayout.LayoutParams previewLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, Math.round(48 * density));
+        previewLp.bottomMargin = Math.round(10 * density);
+        preview.setLayoutParams(previewLp);
+
+        TextView hexText = new TextView(this);
+        hexText.setTextSize(14f);
+        hexText.setPadding(0, 0, 0, Math.round(12 * density));
+
+        TextView hueLabel = new TextView(this);
+        hueLabel.setText("Hue");
+        SeekBar hueBar = new SeekBar(this);
+        hueBar.setMax(360);
+        hueBar.setProgress(Math.round(hsv[0]));
+
+        TextView satLabel = new TextView(this);
+        satLabel.setText("Saturation");
+        satLabel.setPadding(0, Math.round(8 * density), 0, 0);
+        SeekBar satBar = new SeekBar(this);
+        satBar.setMax(100);
+        satBar.setProgress(Math.round(hsv[1] * 100f));
+
+        TextView valLabel = new TextView(this);
+        valLabel.setText("Brightness");
+        valLabel.setPadding(0, Math.round(8 * density), 0, 0);
+        SeekBar valBar = new SeekBar(this);
+        valBar.setMax(100);
+        valBar.setProgress(Math.round(hsv[2] * 100f));
+
+        Runnable updatePreview = () -> {
+            int color = Color.HSVToColor(hsv);
+            GradientDrawable bg = new GradientDrawable();
+            bg.setCornerRadius(8 * density);
+            bg.setColor(color);
+            preview.setBackground(bg);
+            hexText.setText(String.format("#%06X", (0xFFFFFF & color)));
+            ThemeHelper.tintSeekBar(hueBar, color);
+            ThemeHelper.tintSeekBar(satBar, color);
+            ThemeHelper.tintSeekBar(valBar, color);
+        };
+        updatePreview.run();
+
+        SeekBar.OnSeekBarChangeListener listener = new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (!fromUser) return;
+                hsv[0] = hueBar.getProgress();
+                hsv[1] = satBar.getProgress() / 100f;
+                hsv[2] = valBar.getProgress() / 100f;
+                updatePreview.run();
+            }
+            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
+        };
+        hueBar.setOnSeekBarChangeListener(listener);
+        satBar.setOnSeekBarChangeListener(listener);
+        valBar.setOnSeekBarChangeListener(listener);
+
+        container.addView(preview);
+        container.addView(hexText);
+        container.addView(hueLabel);
+        container.addView(hueBar);
+        container.addView(satLabel);
+        container.addView(satBar);
+        container.addView(valLabel);
+        container.addView(valBar);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Custom Accent Color")
+                .setView(container)
+                .setPositiveButton("Apply", (d, w) -> {
+                    int chosen = Color.HSVToColor(hsv);
+                    ThemeHelper.saveAccentColor(this, chosen);
+                    setupAccentPresets();
+                    applySettingsAccent();
+                })
+                .setNeutralButton("Reset (Violet)", (d, w) -> {
+                    ThemeHelper.saveAccentColor(this, 0);
+                    setupAccentPresets();
+                    applySettingsAccent();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private void showImportUrlDialog() {

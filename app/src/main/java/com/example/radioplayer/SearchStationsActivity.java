@@ -30,6 +30,7 @@ public class SearchStationsActivity extends AppCompatActivity {
     private EditText searchQueryEdit;
     private Button searchActionButton;
     private Spinner countrySpinner;
+    private Spinner genreSpinner;
     private ProgressBar searchProgress;
     private TextView searchStatusText;
     private ListView searchResultsList;
@@ -38,7 +39,10 @@ public class SearchStationsActivity extends AppCompatActivity {
     private final Set<String> addedSources = new HashSet<>();
     private final List<RadioBrowserClient.CountryInfo> countries = new ArrayList<>();
     private ArrayAdapter<RadioBrowserClient.CountryInfo> countryAdapter;
+    private final List<RadioBrowserClient.TagInfo> genres = new ArrayList<>();
+    private ArrayAdapter<RadioBrowserClient.TagInfo> genreAdapter;
     private String lastSelectedCountryCode = "";
+    private String lastSelectedGenre = "";
     private SearchAdapter adapter;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -50,6 +54,7 @@ public class SearchStationsActivity extends AppCompatActivity {
         searchQueryEdit = findViewById(R.id.searchQueryEdit);
         searchActionButton = findViewById(R.id.searchActionButton);
         countrySpinner = findViewById(R.id.countrySpinner);
+        genreSpinner = findViewById(R.id.genreSpinner);
         searchProgress = findViewById(R.id.searchProgress);
         searchStatusText = findViewById(R.id.searchStatusText);
         searchResultsList = findViewById(R.id.searchResultsList);
@@ -74,7 +79,32 @@ public class SearchStationsActivity extends AppCompatActivity {
                 }
                 lastSelectedCountryCode = code;
                 String query = searchQueryEdit.getText().toString().trim();
-                if (!code.isEmpty() || !query.isEmpty()) {
+                String genre = getSelectedGenreName();
+                if (!code.isEmpty() || !genre.isEmpty() || !query.isEmpty()) {
+                    runSearch();
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+
+        genres.add(new RadioBrowserClient.TagInfo("All Genres", 0));
+        genreAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, genres);
+        genreAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        genreSpinner.setAdapter(genreAdapter);
+        genreSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String genre = getSelectedGenreName();
+                if (genre.equals(lastSelectedGenre)) {
+                    return;
+                }
+                lastSelectedGenre = genre;
+                String query = searchQueryEdit.getText().toString().trim();
+                RadioBrowserClient.CountryInfo selected = getSelectedCountry();
+                String code = selected != null ? selected.isoCode : "";
+                if (!genre.isEmpty() || !code.isEmpty() || !query.isEmpty()) {
                     runSearch();
                 }
             }
@@ -84,6 +114,7 @@ public class SearchStationsActivity extends AppCompatActivity {
         });
 
         loadCountries();
+        loadGenres();
 
         searchActionButton.setOnClickListener(v -> runSearch());
         searchQueryEdit.setOnEditorActionListener((v, actionId, event) -> {
@@ -109,6 +140,15 @@ public class SearchStationsActivity extends AppCompatActivity {
         return null;
     }
 
+    private String getSelectedGenreName() {
+        Object item = genreSpinner.getSelectedItem();
+        if (item instanceof RadioBrowserClient.TagInfo) {
+            RadioBrowserClient.TagInfo tag = (RadioBrowserClient.TagInfo) item;
+            return tag.stationCount > 0 ? tag.name : "";
+        }
+        return "";
+    }
+
     private void loadCountries() {
         executor.execute(() -> {
             try {
@@ -126,25 +166,41 @@ public class SearchStationsActivity extends AppCompatActivity {
         });
     }
 
+    private void loadGenres() {
+        executor.execute(() -> {
+            try {
+                List<RadioBrowserClient.TagInfo> fetched = RadioBrowserClient.fetchTags();
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    genres.clear();
+                    genres.add(new RadioBrowserClient.TagInfo("All Genres", 0));
+                    genres.addAll(fetched);
+                    genreAdapter.notifyDataSetChanged();
+                });
+            } catch (Exception ignored) {
+                // Keep "All Genres" available even if genre list fetch fails
+            }
+        });
+    }
+
     private void runSearch() {
         String query = searchQueryEdit.getText().toString().trim();
         RadioBrowserClient.CountryInfo selectedCountry = getSelectedCountry();
         String countryCode = selectedCountry != null ? selectedCountry.isoCode : "";
+        String genre = getSelectedGenreName();
 
-        if (query.isEmpty() && countryCode.isEmpty()) {
-            searchQueryEdit.setError("Enter a station name or select a country");
+        if (query.isEmpty() && countryCode.isEmpty() && genre.isEmpty()) {
+            searchQueryEdit.setError("Enter a station name, country, or genre");
             return;
         }
         searchQueryEdit.setError(null);
         searchProgress.setVisibility(View.VISIBLE);
         searchActionButton.setEnabled(false);
-        searchStatusText.setText(countryCode.isEmpty()
-                ? "Searching radio-browser.info..."
-                : "Loading stations for " + selectedCountry.name + "...");
+        searchStatusText.setText("Searching radio-browser.info...");
 
         executor.execute(() -> {
             try {
-                List<RadioStationParser.RadioStation> found = RadioBrowserClient.searchStations(query, countryCode);
+                List<RadioStationParser.RadioStation> found = RadioBrowserClient.searchStations(query, countryCode, genre);
                 runOnUiThread(() -> {
                     if (isFinishing() || isDestroyed()) return;
                     searchProgress.setVisibility(View.GONE);
@@ -225,6 +281,7 @@ public class SearchStationsActivity extends AppCompatActivity {
             if (station != null) {
                 holder.title.setText(StationStore.safeTitle(station));
                 holder.meta.setText(station.tags != null && !station.tags.isEmpty() ? station.tags : station.source);
+                holder.meta.setTextColor(ThemeHelper.getAccentColor(SearchStationsActivity.this));
                 boolean isAdded = addedSources.contains(station.source);
                 holder.addButton.setText(isAdded ? "Added" : "Add");
                 holder.addButton.setEnabled(!isAdded);

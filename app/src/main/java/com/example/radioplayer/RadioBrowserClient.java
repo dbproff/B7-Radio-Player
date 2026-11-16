@@ -46,15 +46,38 @@ public final class RadioBrowserClient {
         }
     }
 
+    public static final class TagInfo {
+        public final String name;
+        public final int stationCount;
+
+        public TagInfo(String name, int stationCount) {
+            this.name = name;
+            this.stationCount = stationCount;
+        }
+
+        @Override
+        public String toString() {
+            if (stationCount <= 0) {
+                return name;
+            }
+            return name + " (" + stationCount + ")";
+        }
+    }
+
     private RadioBrowserClient() {}
 
     public static List<RadioStationParser.RadioStation> searchStations(String query) throws IOException {
-        return searchStations(query, null);
+        return searchStations(query, null, null);
     }
 
     public static List<RadioStationParser.RadioStation> searchStations(String query, String countryCode) throws IOException {
+        return searchStations(query, countryCode, null);
+    }
+
+    public static List<RadioStationParser.RadioStation> searchStations(String query, String countryCode, String tag) throws IOException {
         String trimmedQuery = query != null ? query.trim() : "";
         String trimmedCountry = countryCode != null ? countryCode.trim() : "";
+        String trimmedTag = tag != null ? tag.trim() : "";
 
         StringBuilder path = new StringBuilder("/json/stations/search?limit=60&hidebroken=true&order=clickcount&reverse=true");
         if (!trimmedQuery.isEmpty()) {
@@ -63,9 +86,32 @@ public final class RadioBrowserClient {
         if (!trimmedCountry.isEmpty()) {
             path.append("&countrycode=").append(URLEncoder.encode(trimmedCountry, "UTF-8"));
         }
+        if (!trimmedTag.isEmpty()) {
+            path.append("&tag=").append(URLEncoder.encode(trimmedTag, "UTF-8"));
+        }
 
         String json = fetchFromAnyHost(path.toString());
         return parseRadioBrowserJson(json);
+    }
+
+    public static List<TagInfo> fetchTags() throws IOException {
+        String json = fetchFromAnyHost("/json/tags?order=stationcount&reverse=true&hidebroken=true&limit=100");
+        List<TagInfo> tags = new ArrayList<>();
+        try {
+            JSONArray array = new JSONArray(json);
+            for (int i = 0; i < array.length(); i++) {
+                JSONObject obj = array.optJSONObject(i);
+                if (obj == null) continue;
+                String name = obj.optString("name", "").trim();
+                int count = obj.optInt("stationcount", 0);
+                if (name.isEmpty() || count <= 0) continue;
+                tags.add(new TagInfo(name, count));
+            }
+        } catch (Exception e) {
+            throw new IOException("Failed to parse genres", e);
+        }
+        Collections.sort(tags, Comparator.comparing(t -> t.name.toLowerCase(Locale.US)));
+        return tags;
     }
 
     public static List<CountryInfo> fetchCountries() throws IOException {

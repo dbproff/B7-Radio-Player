@@ -42,6 +42,7 @@
         </LinearLayout>
 
         <TextView
+            android:id="@+id/settingsThemeHeader"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="App Theme"
@@ -81,6 +82,61 @@
                 android:paddingVertical="8dp" />
         </RadioGroup>
 
+        <TextView
+            android:id="@+id/settingsAccentHeader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Controls &amp; Highlights Color"
+            android:textColor="@color/app_accent"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="10dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <View
+                android:id="@+id/accentPreviewSwatch"
+                android:layout_width="28dp"
+                android:layout_height="28dp" />
+
+            <TextView
+                android:id="@+id/accentCurrentLabel"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:text="Violet (Default)"
+                android:textColor="@color/app_text_primary"
+                android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/settingsCustomColorButton"
+                style="?android:attr/buttonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Color Picker..."
+                android:textAllCaps="false" />
+        </LinearLayout>
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:layout_marginBottom="20dp">
+
+            <LinearLayout
+                android:id="@+id/accentPresetsContainer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical" />
+        </HorizontalScrollView>
+
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
@@ -88,6 +144,7 @@
             android:layout_marginBottom="20dp" />
 
         <TextView
+            android:id="@+id/settingsLibraryHeader"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Library &amp; Backup"
@@ -148,6 +205,7 @@
             android:layout_marginBottom="20dp" />
 
         <TextView
+            android:id="@+id/settingsAboutHeader"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="About"
