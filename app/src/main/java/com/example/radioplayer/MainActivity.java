@@ -81,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
     private View streamStatusIndicator;
     private View captureHeaderRow, captureControlsRow, captureStatusDot;
     private TextView captureHeaderText, captureFoldIndicator, captureDetailText;
-    private Button captureRecordPauseButton, captureStopButton;
+    private ImageButton captureRecordPauseButton, captureStopButton;
     private boolean capturePanelExpanded = false;
     private ImageView nowPlayingThumb;
     private SeekBar mainVolumeSeekBar;
@@ -385,7 +385,7 @@ public class MainActivity extends AppCompatActivity {
             recordedTabIndicator.setBackgroundColor(accent);
         }
         if (captureRecordPauseButton != null) {
-            captureRecordPauseButton.setBackgroundTintList(ColorStateList.valueOf(accent));
+            ImageViewCompat.setImageTintList(captureRecordPauseButton, ColorStateList.valueOf(accent));
         }
         ThemeHelper.tintSeekBar(mainVolumeSeekBar, accent);
         if (stationAdapter != null) {
@@ -496,29 +496,47 @@ public class MainActivity extends AppCompatActivity {
         if (state == StreamRecorder.STATE_RECORDING) {
             captureHeaderText.setText("REC • " + timeStr + " • " + sizeStr);
             if (captureStatusDot != null) captureStatusDot.setAlpha(1.0f);
-            if (captureRecordPauseButton != null) captureRecordPauseButton.setText("Pause");
-            if (captureStopButton != null) captureStopButton.setEnabled(true);
+            if (captureRecordPauseButton != null) {
+                captureRecordPauseButton.setImageResource(R.drawable.ic_pause);
+                captureRecordPauseButton.setContentDescription("Pause recording");
+            }
+            if (captureStopButton != null) {
+                captureStopButton.setEnabled(true);
+                captureStopButton.setAlpha(1.0f);
+            }
             if (captureDetailText != null) {
                 captureDetailText.setText(fileName != null ? fileName : ("Recording " + stationTitle));
             }
         } else if (state == StreamRecorder.STATE_PAUSED) {
             captureHeaderText.setText("PAUSED • " + timeStr + " • " + sizeStr);
             if (captureStatusDot != null) captureStatusDot.setAlpha(0.6f);
-            if (captureRecordPauseButton != null) captureRecordPauseButton.setText("Resume");
-            if (captureStopButton != null) captureStopButton.setEnabled(true);
+            if (captureRecordPauseButton != null) {
+                captureRecordPauseButton.setImageResource(R.drawable.ic_record);
+                captureRecordPauseButton.setContentDescription("Resume recording");
+            }
+            if (captureStopButton != null) {
+                captureStopButton.setEnabled(true);
+                captureStopButton.setAlpha(1.0f);
+            }
             if (captureDetailText != null) {
                 captureDetailText.setText("Paused" + (fileName != null ? " — " + fileName : ""));
             }
         } else {
             captureHeaderText.setText("Stream Capture");
             if (captureStatusDot != null) captureStatusDot.setAlpha(0.35f);
-            if (captureRecordPauseButton != null) captureRecordPauseButton.setText("Record");
-            if (captureStopButton != null) captureStopButton.setEnabled(false);
+            if (captureRecordPauseButton != null) {
+                captureRecordPauseButton.setImageResource(R.drawable.ic_record);
+                captureRecordPauseButton.setContentDescription("Record");
+            }
+            if (captureStopButton != null) {
+                captureStopButton.setEnabled(false);
+                captureStopButton.setAlpha(0.35f);
+            }
             if (captureDetailText != null) {
                 if (errorMessage != null && !errorMessage.isEmpty()) {
                     captureDetailText.setText("Capture error: " + errorMessage);
                 } else {
-                    captureDetailText.setText("Tap Record to capture the playing stream");
+                    captureDetailText.setText("Tap ⏺ to capture the playing stream");
                 }
             }
         }
@@ -1007,6 +1025,7 @@ public class MainActivity extends AppCompatActivity {
             songTitleView.setText(finalInfo);
             if (currentStation != null) {
                 currentStationView.setText(StationStore.safeTitle(currentStation));
+                StreamRecorder.getInstance().onSongChanged(finalInfo);
             }
         });
     }

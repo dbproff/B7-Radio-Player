@@ -92,6 +92,8 @@ public final class StreamRecorder {
     private String currentSongTitle;
     private String currentFileName;
     private String currentMimeType = "audio/mpeg";
+    private String lastContentType;
+    private volatile String pendingNewSongTitle;
     private Uri currentOutputUri;
     private File currentOutputFile;
     private OutputStream currentOutputStream;
@@ -199,6 +201,8 @@ public final class StreamRecorder {
         this.bytesWritten = 0L;
         this.stopRequested = false;
         this.pauseRequested = false;
+        this.pendingNewSongTitle = null;
+        this.lastContentType = null;
         this.currentOutputUri = null;
         this.currentOutputFile = null;
         this.currentOutputStream = null;
@@ -234,6 +238,25 @@ public final class StreamRecorder {
         notifyState(null);
         mainHandler.post(tickerRunnable);
         startWorker();
+    }
+
+    public synchronized void onSongChanged(String newSongTitle) {
+        if (state != STATE_RECORDING || newSongTitle == null) return;
+        String clean = newSongTitle.trim();
+        if (clean.isEmpty() || "...".equals(clean)
+                || clean.startsWith("Buffering")
+                || clean.startsWith("Connection timed out")
+                || clean.startsWith("Recorded Stream")) {
+            return;
+        }
+        if (currentSongTitle != null && clean.equalsIgnoreCase(currentSongTitle)) {
+            return;
+        }
+        if ((currentSongTitle == null || currentSongTitle.isEmpty()) && bytesWritten < 32768) {
+            currentSongTitle = clean;
+            return;
+        }
+        pendingNewSongTitle = clean;
     }
 
     public synchronized void stopRecording() {
@@ -291,13 +314,18 @@ public final class StreamRecorder {
 
             if (conn != null && !stopRequested && !pauseRequested) {
                 if (currentOutputStream == null) {
-                    String contentType = conn.getContentType();
-                    openDestinationOutput(contentType);
+                    lastContentType = conn.getContentType();
+                    openDestinationOutput(lastContentType);
                 }
                 byte[] buffer = new byte[8192];
                 try (InputStream is = conn.getInputStream()) {
                     int read;
                     while (!stopRequested && !pauseRequested && (read = is.read(buffer)) != -1) {
+                        if (pendingNewSongTitle != null) {
+                            String nextSong = pendingNewSongTitle;
+                            pendingNewSongTitle = null;
+                            splitToNextSongFile(nextSong);
+                        }
                         if (read > 0 && currentOutputStream != null) {
                             currentOutputStream.write(buffer, 0, read);
                             bytesWritten += read;
@@ -427,6 +455,55 @@ public final class StreamRecorder {
             currentOutputFile = outFile;
             currentOutputUri = Uri.fromFile(outFile);
             currentOutputStream = new FileOutputStream(outFile);
+        }
+    }
+
+    private void splitToNextSongFile(String nextSongTitle) throws IOException {
+        if (currentOutputStream != null) {
+            try {
+                currentOutputStream.flush();
+                currentOutputStream.close();
+            } catch (Exception ignored) {}
+            currentOutputStream = null;
+        }
+
+        if (appContext != null && currentOutputUri != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+                && currentLocationMode != LOCATION_CUSTOM) {
+            try {
+                if (bytesWritten == 0) {
+                    appContext.getContentResolver().delete(currentOutputUri, null, null);
+                } else {
+                    ContentValues values = new ContentValues();
+                    values.put(MediaStore.MediaColumns.IS_PENDING, 0);
+                    appContext.getContentResolver().update(currentOutputUri, values, null, null);
+                }
+            } catch (Exception ignored) {}
+        } else if (currentOutputFile != null && bytesWritten == 0 && currentOutputFile.exists()) {
+            //noinspection ResultOfMethodCallIgnored
+            currentOutputFile.delete();
+        }
+
+        boolean savedPrevious = bytesWritten > 0;
+        currentOutputUri = null;
+        currentOutputFile = null;
+        currentSongTitle = nextSongTitle;
+        bytesWritten = 0L;
+        accumulatedElapsedMs = 0L;
+        segmentStartMs = System.currentTimeMillis();
+
+        openDestinationOutput(lastContentType);
+        notifyState(null);
+
+        if (savedPrevious) {
+            mainHandler.post(() -> {
+                List<Listener> copy;
+                synchronized (listeners) {
+                    copy = new ArrayList<>(listeners);
+                }
+                for (Listener l : copy) {
+                    l.onRecordingFinished();
+                }
+            });
         }
     }
 
