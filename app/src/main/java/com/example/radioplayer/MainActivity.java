@@ -102,6 +102,7 @@ public class MainActivity extends AppCompatActivity {
     private StationAdapter stationAdapter;
     private RecordedAdapter recordedAdapter;
     private final List<StreamRecorder.RecordedItem> recordedItems = new ArrayList<>();
+    private final Set<Uri> selectedRecordUris = new HashSet<>();
     private Uri currentRecordedUri = null;
     private int editingPosition = -1;
     private int currentTab = TAB_FAVORITES;
@@ -274,7 +275,12 @@ public class MainActivity extends AppCompatActivity {
         stationListView.setOnItemClickListener((parent, view, position, id) -> {
             if (currentTab == TAB_RECORDED) {
                 if (position >= 0 && position < recordedItems.size()) {
-                    playRecordedItem(recordedItems.get(position));
+                    StreamRecorder.RecordedItem item = recordedItems.get(position);
+                    if (!selectedRecordUris.isEmpty()) {
+                        toggleRecordSelection(item);
+                    } else {
+                        playRecordedItem(item);
+                    }
                 }
             } else if (position >= 0 && position < displayedStations.size()) {
                 playStation(displayedStations.get(position));
@@ -650,6 +656,9 @@ public class MainActivity extends AppCompatActivity {
                 stationListView.setAdapter(recordedAdapter);
             }
         } else {
+            if (!selectedRecordUris.isEmpty()) {
+                selectedRecordUris.clear();
+            }
             if (stationListView.getAdapter() != stationAdapter) {
                 stationListView.setAdapter(stationAdapter);
             }
@@ -711,10 +720,50 @@ public class MainActivity extends AppCompatActivity {
         if (recordedAdapter != null) recordedAdapter.notifyDataSetChanged();
     }
 
+    private void toggleRecordSelection(StreamRecorder.RecordedItem item) {
+        if (item == null || item.uri == null) return;
+        if (selectedRecordUris.contains(item.uri)) {
+            selectedRecordUris.remove(item.uri);
+        } else {
+            selectedRecordUris.add(item.uri);
+        }
+        if (recordedAdapter != null) {
+            recordedAdapter.notifyDataSetChanged();
+        }
+    }
+
     private void showRecordedContextMenu(View anchor, StreamRecorder.RecordedItem item) {
         PopupMenu popup = new PopupMenu(this, anchor);
+        if (!selectedRecordUris.isEmpty()) {
+            int count = selectedRecordUris.size();
+            popup.getMenu().add("Delete Selected (" + count + ")");
+            if (count < recordedItems.size()) {
+                popup.getMenu().add("Select All");
+            }
+            popup.getMenu().add("Clear Selection");
+            popup.setOnMenuItemClickListener(menuItem -> {
+                String title = String.valueOf(menuItem.getTitle());
+                if (title.startsWith("Delete Selected")) {
+                    confirmDeleteSelectedRecords();
+                } else if ("Select All".equals(title)) {
+                    for (StreamRecorder.RecordedItem r : recordedItems) {
+                        if (r != null && r.uri != null) selectedRecordUris.add(r.uri);
+                    }
+                    if (recordedAdapter != null) recordedAdapter.notifyDataSetChanged();
+                } else if ("Clear Selection".equals(title)) {
+                    selectedRecordUris.clear();
+                    if (recordedAdapter != null) recordedAdapter.notifyDataSetChanged();
+                }
+                return true;
+            });
+            popup.show();
+            return;
+        }
+
         popup.getMenu().add("Play");
         popup.getMenu().add("Delete");
+        popup.getMenu().add("Select");
+        popup.getMenu().add("Select All");
         popup.setOnMenuItemClickListener(menuItem -> {
             CharSequence title = menuItem.getTitle();
             if ("Play".equals(title)) {
@@ -735,10 +784,48 @@ public class MainActivity extends AppCompatActivity {
                         })
                         .setNegativeButton("Cancel", null)
                         .show();
+            } else if ("Select".equals(title)) {
+                if (item != null && item.uri != null) {
+                    selectedRecordUris.add(item.uri);
+                    if (recordedAdapter != null) recordedAdapter.notifyDataSetChanged();
+                }
+            } else if ("Select All".equals(title)) {
+                for (StreamRecorder.RecordedItem r : recordedItems) {
+                    if (r != null && r.uri != null) selectedRecordUris.add(r.uri);
+                }
+                if (recordedAdapter != null) recordedAdapter.notifyDataSetChanged();
             }
             return true;
         });
         popup.show();
+    }
+
+    private void confirmDeleteSelectedRecords() {
+        int count = selectedRecordUris.size();
+        if (count == 0) return;
+        new AlertDialog.Builder(this)
+                .setTitle("Delete Recordings")
+                .setMessage("Delete " + count + " selected recording(s)?")
+                .setPositiveButton("Delete", (d, w) -> {
+                    List<StreamRecorder.RecordedItem> toDelete = new ArrayList<>();
+                    for (StreamRecorder.RecordedItem r : recordedItems) {
+                        if (r != null && r.uri != null && selectedRecordUris.contains(r.uri)) {
+                            toDelete.add(r);
+                        }
+                    }
+                    int deleted = 0;
+                    for (StreamRecorder.RecordedItem r : toDelete) {
+                        if (StreamRecorder.deleteRecording(this, r)) {
+                            recordedItems.remove(r);
+                            deleted++;
+                        }
+                    }
+                    selectedRecordUris.clear();
+                    if (recordedAdapter != null) recordedAdapter.notifyDataSetChanged();
+                    Toast.makeText(this, "Deleted " + deleted + " recording(s)", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private void showMainMenu() {
@@ -1381,14 +1468,22 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 int accent = ThemeHelper.getAccentColor(MainActivity.this);
-                holder.favIcon.setText("▶");
-                holder.favIcon.setTextColor(accent);
-                holder.favIcon.setOnClickListener(v -> playRecordedItem(item));
+                boolean isSelected = item.uri != null && selectedRecordUris.contains(item.uri);
+                boolean inSelectionMode = !selectedRecordUris.isEmpty();
+                if (inSelectionMode) {
+                    holder.favIcon.setText(isSelected ? "☑" : "☐");
+                    holder.favIcon.setTextColor(accent);
+                    holder.favIcon.setOnClickListener(v -> toggleRecordSelection(item));
+                } else {
+                    holder.favIcon.setText("▶");
+                    holder.favIcon.setTextColor(accent);
+                    holder.favIcon.setOnClickListener(v -> playRecordedItem(item));
+                }
 
                 boolean isCurrent = currentRecordedUri != null && currentRecordedUri.equals(item.uri);
                 holder.nowPlayingIndicator.setBackgroundColor(accent);
-                holder.nowPlayingIndicator.setVisibility(isCurrent ? View.VISIBLE : View.INVISIBLE);
-                convertView.setBackgroundColor(isCurrent
+                holder.nowPlayingIndicator.setVisibility((isCurrent || isSelected) ? View.VISIBLE : View.INVISIBLE);
+                convertView.setBackgroundColor((isCurrent || isSelected)
                         ? ThemeHelper.getSelectedRowColor(MainActivity.this)
                         : Color.TRANSPARENT);
             }

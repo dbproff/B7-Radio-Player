@@ -10,8 +10,8 @@ android {
         applicationId = "io.b7.radioplayer"
         minSdk = 21
         targetSdk = 34
-        versionCode = 12
-        versionName = "0.0.2"
+        versionCode = 13
+        versionName = "0.1.13"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -58,11 +58,17 @@ def isBuildTask = gradle.startParameter.taskNames.any {
 if (isBuildTask) {
     def buildFile = file('build.gradle')
     def content = buildFile.getText('UTF-8')
-    def matcher = (content =~ /(?m)^(\s*versionCode\s*=\s*)(\d+)$/)
-    if (matcher.find()) {
-        int currentCode = Integer.parseInt(matcher.group(2))
+    def codeMatcher = (content =~ /(?m)^(\s*versionCode\s*=\s*)(\d+)$/)
+    if (codeMatcher.find()) {
+        int currentCode = Integer.parseInt(codeMatcher.group(2))
         int nextCode = currentCode + 1
-        buildFile.setText(matcher.replaceFirst("\$1" + nextCode), 'UTF-8')
+        content = codeMatcher.replaceFirst("\$1" + nextCode)
+        def nameMatcher = (content =~ /(?m)^(\s*versionName\s*=\s*)"[^"]*"$/)
+        if (nameMatcher.find()) {
+            content = nameMatcher.replaceFirst("\$1\"0.1." + nextCode + "\"")
+        }
+        buildFile.setText(content, 'UTF-8')
         android.defaultConfig.versionCode = nextCode
+        android.defaultConfig.versionName = "0.1." + nextCode
     }
 }
