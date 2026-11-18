@@ -85,6 +85,18 @@ public class MainActivity extends AppCompatActivity {
     private boolean capturePanelExpanded = false;
     private ImageView nowPlayingThumb;
     private SeekBar mainVolumeSeekBar;
+    private View playbackProgressContainer;
+    private SeekBar playbackSeekBar;
+    private TextView playbackPositionText, playbackDurationText;
+    private boolean userSeekingPlayback = false;
+    private final Handler playbackProgressHandler = new Handler(Looper.getMainLooper());
+    private final Runnable playbackProgressRunnable = new Runnable() {
+        @Override
+        public void run() {
+            updatePlaybackProgress();
+            playbackProgressHandler.postDelayed(this, 500);
+        }
+    };
     private AudioManager audioManager;
     private ListView stationListView;
     private StationAdapter stationAdapter;
@@ -221,6 +233,11 @@ public class MainActivity extends AppCompatActivity {
         sleepTimerStatus = findViewById(R.id.sleepTimerStatus);
         nowPlayingThumb = findViewById(R.id.nowPlayingThumb);
         mainVolumeSeekBar = findViewById(R.id.mainVolumeSeekBar);
+        playbackProgressContainer = findViewById(R.id.playbackProgressContainer);
+        playbackSeekBar = findViewById(R.id.playbackSeekBar);
+        playbackPositionText = findViewById(R.id.playbackPositionText);
+        playbackDurationText = findViewById(R.id.playbackDurationText);
+        setupPlaybackSeekBar();
         audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
         setupVolumeControl();
         stationListView = findViewById(R.id.stationListView);
@@ -362,6 +379,71 @@ public class MainActivity extends AppCompatActivity {
         if (currentTab == TAB_RECORDED) {
             loadRecordedItemsAsync();
         }
+        playbackProgressHandler.removeCallbacks(playbackProgressRunnable);
+        playbackProgressHandler.post(playbackProgressRunnable);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        playbackProgressHandler.removeCallbacks(playbackProgressRunnable);
+    }
+
+    private void setupPlaybackSeekBar() {
+        if (playbackSeekBar == null) return;
+        playbackSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser && playbackPositionText != null) {
+                    playbackPositionText.setText(StreamRecorder.formatDuration(progress));
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                userSeekingPlayback = true;
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                userSeekingPlayback = false;
+                if (mediaController != null) {
+                    mediaController.seekTo(seekBar.getProgress());
+                }
+            }
+        });
+    }
+
+    private void updatePlaybackProgress() {
+        if (playbackProgressContainer == null) return;
+        if (mediaController == null) {
+            playbackProgressContainer.setVisibility(View.GONE);
+            return;
+        }
+        MediaItem currentItem = mediaController.getCurrentMediaItem();
+        boolean isRecorded = currentRecordedUri != null
+                || (currentItem != null && currentItem.mediaId.startsWith("recorded:"));
+        long duration = mediaController.getDuration();
+        boolean seekable = isRecorded && mediaController.isCurrentMediaItemSeekable()
+                && duration > 0 && duration != androidx.media3.common.C.TIME_UNSET;
+        if (!seekable) {
+            playbackProgressContainer.setVisibility(View.GONE);
+            return;
+        }
+        playbackProgressContainer.setVisibility(View.VISIBLE);
+        long position = Math.max(0L, Math.min(mediaController.getCurrentPosition(), duration));
+        if (playbackDurationText != null) {
+            playbackDurationText.setText(StreamRecorder.formatDuration(duration));
+        }
+        if (!userSeekingPlayback) {
+            if (playbackSeekBar != null) {
+                playbackSeekBar.setMax((int) duration);
+                playbackSeekBar.setProgress((int) position);
+            }
+            if (playbackPositionText != null) {
+                playbackPositionText.setText(StreamRecorder.formatDuration(position));
+            }
+        }
     }
 
     private void applyAccentColor() {
@@ -388,6 +470,7 @@ public class MainActivity extends AppCompatActivity {
             ImageViewCompat.setImageTintList(captureRecordPauseButton, ColorStateList.valueOf(accent));
         }
         ThemeHelper.tintSeekBar(mainVolumeSeekBar, accent);
+        ThemeHelper.tintSeekBar(playbackSeekBar, accent);
         if (stationAdapter != null) {
             stationAdapter.notifyDataSetChanged();
         }
@@ -872,6 +955,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        playbackProgressHandler.removeCallbacks(playbackProgressRunnable);
         StreamRecorder.getInstance().removeListener(recorderListener);
         networkExecutor.shutdownNow();
     }

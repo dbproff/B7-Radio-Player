@@ -10,7 +10,7 @@ android {
         applicationId = "io.b7.radioplayer"
         minSdk = 21
         targetSdk = 34
-        versionCode = 2
+        versionCode = 12
         versionName = "0.0.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -49,4 +49,20 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+}
+
+// Auto-increment versionCode on every local assemble/install/bundle build
+def isBuildTask = gradle.startParameter.taskNames.any {
+    it.toLowerCase().contains('assemble') || it.toLowerCase().contains('install') || it.toLowerCase().contains('bundle')
+}
+if (isBuildTask) {
+    def buildFile = file('build.gradle')
+    def content = buildFile.getText('UTF-8')
+    def matcher = (content =~ /(?m)^(\s*versionCode\s*=\s*)(\d+)$/)
+    if (matcher.find()) {
+        int currentCode = Integer.parseInt(matcher.group(2))
+        int nextCode = currentCode + 1
+        buildFile.setText(matcher.replaceFirst("\$1" + nextCode), 'UTF-8')
+        android.defaultConfig.versionCode = nextCode
+    }
 }

@@ -150,14 +150,20 @@ public class SettingsActivity extends AppCompatActivity {
         findViewById(R.id.settingsScanDeadButton).setOnClickListener(v -> scanForDeadStations());
 
         TextView versionText = findViewById(R.id.aboutVersionText);
-        String versionName = "0.0.1";
+        String versionName = "0.0.2";
+        long versionCode = 1;
         try {
             PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
             if (info.versionName != null) {
                 versionName = info.versionName;
             }
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                versionCode = info.getLongVersionCode();
+            } else {
+                versionCode = info.versionCode;
+            }
         } catch (Exception ignored) {}
-        versionText.setText("Version " + versionName);
+        versionText.setText("Version " + versionName + " (Build " + versionCode + ")");
     }
 
     private void setupCaptureLocationControls() {
