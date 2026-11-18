@@ -89,6 +89,7 @@ public final class StreamRecorder {
     private Context appContext;
     private String currentStreamUrl;
     private String currentStationTitle;
+    private String currentSongTitle;
     private String currentFileName;
     private String currentMimeType = "audio/mpeg";
     private Uri currentOutputUri;
@@ -175,7 +176,8 @@ public final class StreamRecorder {
                 .apply();
     }
 
-    public synchronized void startRecording(Context context, String streamUrl, String stationTitle) {
+    public synchronized void startRecording(Context context, String streamUrl,
+                                            String stationTitle, String songTitle) {
         if (streamUrl == null || streamUrl.trim().isEmpty()) {
             notifyState("No active stream URL to record");
             return;
@@ -192,6 +194,7 @@ public final class StreamRecorder {
         this.currentStreamUrl = streamUrl.trim();
         this.currentStationTitle = (stationTitle != null && !stationTitle.trim().isEmpty())
                 ? stationTitle.trim() : "Radio Stream";
+        this.currentSongTitle = (songTitle != null) ? songTitle.trim() : "";
         this.accumulatedElapsedMs = 0L;
         this.bytesWritten = 0L;
         this.stopRequested = false;
@@ -344,11 +347,23 @@ public final class StreamRecorder {
         }
         currentMimeType = mime;
 
-        String safeTitle = currentStationTitle.replaceAll("[^a-zA-Z0-9._\\- ]+", "_").trim();
-        if (safeTitle.isEmpty()) safeTitle = "Radio";
-        if (safeTitle.length() > 36) safeTitle = safeTitle.substring(0, 36).trim();
+        String safeStation = sanitizeFilePart(currentStationTitle, 32);
+        if (safeStation.isEmpty()) safeStation = "Radio";
+
+        String safeSong = "";
+        if (currentSongTitle != null && !currentSongTitle.isEmpty()
+                && !"...".equals(currentSongTitle)
+                && !currentSongTitle.startsWith("Buffering")
+                && !currentSongTitle.startsWith("Recorded Stream")) {
+            safeSong = sanitizeFilePart(currentSongTitle, 40);
+        }
+
         String stamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(new Date());
-        currentFileName = safeTitle + "_" + stamp + ext;
+        if (!safeSong.isEmpty()) {
+            currentFileName = safeStation + "_" + safeSong + "_" + stamp + ext;
+        } else {
+            currentFileName = safeStation + "_" + stamp + ext;
+        }
 
         if (currentLocationMode == LOCATION_CUSTOM) {
             String treeStr = getCustomFolderUri(appContext);
@@ -604,6 +619,16 @@ public final class StreamRecorder {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    private static String sanitizeFilePart(String input, int maxLen) {
+        if (input == null) return "";
+        String cleaned = input.replaceAll("[\\\\/:*?\"<>|\\r\\n]+", "_").trim();
+        while (cleaned.startsWith(".")) cleaned = cleaned.substring(1).trim();
+        if (cleaned.length() > maxLen) {
+            cleaned = cleaned.substring(0, maxLen).trim();
+        }
+        return cleaned;
     }
 
     public static String formatDuration(long ms) {

@@ -24,6 +24,7 @@ import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.datasource.DataSource;
+import androidx.media3.datasource.DefaultDataSource;
 import androidx.media3.datasource.DefaultHttpDataSource;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.extractor.metadata.icy.IcyInfo;
@@ -119,12 +120,14 @@ import java.util.concurrent.Executors;
         Map<String, String> defaultRequestProperties = new HashMap<>();
         defaultRequestProperties.put("Icy-MetaData", "1");
 
-        DataSource.Factory dataSourceFactory = new DefaultHttpDataSource.Factory()
+        DefaultHttpDataSource.Factory httpDataSourceFactory = new DefaultHttpDataSource.Factory()
                 .setUserAgent("RadioPlayer/1.0")
                 .setDefaultRequestProperties(defaultRequestProperties)
                 .setConnectTimeoutMs(15000)
                 .setReadTimeoutMs(15000)
                 .setAllowCrossProtocolRedirects(true);
+
+        DataSource.Factory dataSourceFactory = new DefaultDataSource.Factory(this, httpDataSourceFactory);
 
         player = new ExoPlayer.Builder(this)
                 .setMediaSourceFactory(new DefaultMediaSourceFactory(this).setDataSourceFactory(dataSourceFactory))
@@ -173,9 +176,16 @@ import java.util.concurrent.Executors;
                         setupAudioEffects(sessionId);
                     }
                 } else if (playbackState == Player.STATE_ENDED) {
-                    Log.d(TAG, "Playback ended, retrying for live stream");
-                    player.prepare();
-                    player.play();
+                    MediaItem current = player.getCurrentMediaItem();
+                    boolean isRecorded = current != null && current.mediaId.startsWith("recorded:");
+                    if (isRecorded) {
+                        player.pause();
+                        player.seekTo(0);
+                    } else {
+                        Log.d(TAG, "Playback ended, retrying for live stream");
+                        player.prepare();
+                        player.play();
+                    }
                 }
             }
 

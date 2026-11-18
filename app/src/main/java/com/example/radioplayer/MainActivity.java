@@ -473,7 +473,8 @@ public class MainActivity extends AppCompatActivity {
                         Toast.makeText(this, "Play a radio station first", Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    recorder.startRecording(this, currentStation.source, StationStore.safeTitle(currentStation));
+                    String song = songTitleView != null ? songTitleView.getText().toString() : "";
+                    recorder.startRecording(this, currentStation.source, StationStore.safeTitle(currentStation), song);
                 } else if (st == StreamRecorder.STATE_RECORDING) {
                     recorder.pauseRecording();
                 } else if (st == StreamRecorder.STATE_PAUSED) {

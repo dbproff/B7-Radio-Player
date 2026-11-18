@@ -183,6 +183,7 @@ public class SettingsActivity extends AppCompatActivity {
             } else {
                 StreamRecorder.setCaptureLocationMode(this, StreamRecorder.LOCATION_MUSIC);
             }
+            updateCaptureFolderLabel();
         });
 
         findViewById(R.id.settingsChooseCaptureFolderButton).setOnClickListener(v ->
@@ -191,6 +192,19 @@ public class SettingsActivity extends AppCompatActivity {
 
     private void updateCaptureFolderLabel() {
         if (captureCustomFolderText == null) return;
+        int mode = StreamRecorder.getCaptureLocationMode(this);
+        android.view.View chooseBtn = findViewById(R.id.settingsChooseCaptureFolderButton);
+        boolean isCustom = (mode == StreamRecorder.LOCATION_CUSTOM);
+        if (chooseBtn != null) {
+            chooseBtn.setEnabled(isCustom);
+            chooseBtn.setAlpha(isCustom ? 1.0f : 0.45f);
+        }
+        if (!isCustom) {
+            captureCustomFolderText.setText(mode == StreamRecorder.LOCATION_DOWNLOADS
+                    ? "Saves automatically to Downloads/B7 Radio Player"
+                    : "Saves automatically to Music/B7 Radio Player");
+            return;
+        }
         String uriStr = StreamRecorder.getCustomFolderUri(this);
         if (uriStr == null || uriStr.isEmpty()) {
             captureCustomFolderText.setText("No custom folder selected");
