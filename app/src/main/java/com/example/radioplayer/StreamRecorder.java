@@ -13,6 +13,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -20,6 +21,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -409,6 +411,7 @@ public final class StreamRecorder {
                 if (currentOutputStream == null) {
                     throw new IOException("Cannot open custom folder output stream");
                 }
+                writeId3IfMp3(mime);
                 return;
             }
         }
@@ -440,6 +443,7 @@ public final class StreamRecorder {
             if (currentOutputStream == null) {
                 throw new IOException("Failed to open output stream");
             }
+            writeId3IfMp3(mime);
         } else {
             String dirType = (currentLocationMode == LOCATION_DOWNLOADS)
                     ? Environment.DIRECTORY_DOWNLOADS : Environment.DIRECTORY_MUSIC;
@@ -455,7 +459,74 @@ public final class StreamRecorder {
             currentOutputFile = outFile;
             currentOutputUri = Uri.fromFile(outFile);
             currentOutputStream = new FileOutputStream(outFile);
+            writeId3IfMp3(mime);
         }
+    }
+
+    private void writeId3IfMp3(String mime) {
+        if (!"audio/mpeg".equals(mime) || currentOutputStream == null) return;
+        try {
+            String album = currentStationTitle != null ? currentStationTitle : "";
+            String artist = "";
+            String title = "";
+            if (currentSongTitle != null && !currentSongTitle.isEmpty()
+                    && !"...".equals(currentSongTitle)
+                    && !currentSongTitle.startsWith("Buffering")
+                    && !currentSongTitle.startsWith("Recorded Stream")) {
+                int dash = currentSongTitle.indexOf(" - ");
+                if (dash > 0) {
+                    artist = currentSongTitle.substring(0, dash).trim();
+                    title = currentSongTitle.substring(dash + 3).trim();
+                } else {
+                    title = currentSongTitle.trim();
+                }
+            }
+            if (title.isEmpty()) {
+                title = album;
+            }
+            byte[] tag = buildId3v23Tag(title, artist, album);
+            if (tag.length > 0) {
+                currentOutputStream.write(tag);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private static byte[] buildId3v23Tag(String title, String artist, String album) throws IOException {
+        ByteArrayOutputStream frames = new ByteArrayOutputStream();
+        if (title != null && !title.isEmpty()) writeId3Frame(frames, "TIT2", title);
+        if (artist != null && !artist.isEmpty()) writeId3Frame(frames, "TPE1", artist);
+        if (album != null && !album.isEmpty()) writeId3Frame(frames, "TALB", album);
+        byte[] frameBytes = frames.toByteArray();
+        if (frameBytes.length == 0) return new byte[0];
+
+        int size = frameBytes.length;
+        ByteArrayOutputStream out = new ByteArrayOutputStream(10 + size);
+        out.write('I');
+        out.write('D');
+        out.write('3');
+        out.write(3); // ID3v2.3
+        out.write(0);
+        out.write(0);
+        out.write((size >> 21) & 0x7F);
+        out.write((size >> 14) & 0x7F);
+        out.write((size >> 7) & 0x7F);
+        out.write(size & 0x7F);
+        out.write(frameBytes);
+        return out.toByteArray();
+    }
+
+    private static void writeId3Frame(ByteArrayOutputStream out, String frameId, String text) throws IOException {
+        byte[] textBytes = text.getBytes(StandardCharsets.UTF_16);
+        int payloadLen = 1 + textBytes.length;
+        out.write(frameId.getBytes(StandardCharsets.US_ASCII));
+        out.write((payloadLen >> 24) & 0xFF);
+        out.write((payloadLen >> 16) & 0xFF);
+        out.write((payloadLen >> 8) & 0xFF);
+        out.write(payloadLen & 0xFF);
+        out.write(0);
+        out.write(0);
+        out.write(1); // UTF-16 with BOM
+        out.write(textBytes);
     }
 
     private void splitToNextSongFile(String nextSongTitle) throws IOException {
