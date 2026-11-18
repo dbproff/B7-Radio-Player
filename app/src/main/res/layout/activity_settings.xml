@@ -144,6 +144,81 @@
             android:layout_marginBottom="20dp" />
 
         <TextView
+            android:id="@+id/settingsCaptureHeader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Stream Capture Location"
+            android:textColor="@color/app_accent"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <RadioGroup
+            android:id="@+id/captureLocationGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp">
+
+            <RadioButton
+                android:id="@+id/captureMusicRadio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Music / B7 Radio Player"
+                android:textColor="@color/app_text_primary"
+                android:paddingVertical="6dp" />
+
+            <RadioButton
+                android:id="@+id/captureDownloadsRadio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Downloads / B7 Radio Player"
+                android:textColor="@color/app_text_primary"
+                android:paddingVertical="6dp" />
+
+            <RadioButton
+                android:id="@+id/captureCustomRadio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Custom folder"
+                android:textColor="@color/app_text_primary"
+                android:paddingVertical="6dp" />
+        </RadioGroup>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="20dp">
+
+            <TextView
+                android:id="@+id/captureCustomFolderText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="No custom folder selected"
+                android:textColor="@color/app_text_secondary"
+                android:textSize="12sp"
+                android:maxLines="2"
+                android:ellipsize="middle" />
+
+            <Button
+                android:id="@+id/settingsChooseCaptureFolderButton"
+                style="?android:attr/buttonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="Choose Folder..."
+                android:textAllCaps="false" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/app_divider"
+            android:layout_marginBottom="20dp" />
+
+        <TextView
             android:id="@+id/settingsLibraryHeader"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

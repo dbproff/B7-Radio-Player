@@ -45,8 +45,31 @@ public class SettingsActivity extends AppCompatActivity {
     private View accentPreviewSwatch;
     private TextView accentCurrentLabel;
     private LinearLayout accentPresetsContainer;
-    private TextView settingsThemeHeader, settingsAccentHeader, settingsLibraryHeader, settingsAboutHeader;
+    private TextView settingsThemeHeader, settingsAccentHeader, settingsCaptureHeader,
+            settingsLibraryHeader, settingsAboutHeader;
     private RadioButton themeSystemRadio, themeDarkRadio, themeLightRadio;
+    private RadioGroup captureLocationGroup;
+    private RadioButton captureMusicRadio, captureDownloadsRadio, captureCustomRadio;
+    private TextView captureCustomFolderText;
+
+    private final ActivityResultLauncher<Uri> chooseCaptureFolderLauncher = registerForActivityResult(
+            new ActivityResultContracts.OpenDocumentTree(),
+            uri -> {
+                if (uri != null) {
+                    try {
+                        int flags = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
+                        getContentResolver().takePersistableUriPermission(uri, flags);
+                    } catch (Exception ignored) {}
+                    StreamRecorder.setCustomFolderUri(this, uri.toString());
+                    StreamRecorder.setCaptureLocationMode(this, StreamRecorder.LOCATION_CUSTOM);
+                    if (captureLocationGroup != null) {
+                        captureLocationGroup.check(R.id.captureCustomRadio);
+                    }
+                    updateCaptureFolderLabel();
+                    Toast.makeText(this, "Capture folder updated", Toast.LENGTH_SHORT).show();
+                }
+            }
+    );
 
     private final ActivityResultLauncher<String[]> importDocumentLauncher = registerForActivityResult(
             new ActivityResultContracts.OpenDocument(),
@@ -98,15 +121,22 @@ public class SettingsActivity extends AppCompatActivity {
 
         settingsThemeHeader = findViewById(R.id.settingsThemeHeader);
         settingsAccentHeader = findViewById(R.id.settingsAccentHeader);
+        settingsCaptureHeader = findViewById(R.id.settingsCaptureHeader);
         settingsLibraryHeader = findViewById(R.id.settingsLibraryHeader);
         settingsAboutHeader = findViewById(R.id.settingsAboutHeader);
         themeSystemRadio = findViewById(R.id.themeSystemRadio);
         themeDarkRadio = findViewById(R.id.themeDarkRadio);
         themeLightRadio = findViewById(R.id.themeLightRadio);
+        captureLocationGroup = findViewById(R.id.captureLocationGroup);
+        captureMusicRadio = findViewById(R.id.captureMusicRadio);
+        captureDownloadsRadio = findViewById(R.id.captureDownloadsRadio);
+        captureCustomRadio = findViewById(R.id.captureCustomRadio);
+        captureCustomFolderText = findViewById(R.id.captureCustomFolderText);
         accentPreviewSwatch = findViewById(R.id.accentPreviewSwatch);
         accentCurrentLabel = findViewById(R.id.accentCurrentLabel);
         accentPresetsContainer = findViewById(R.id.accentPresetsContainer);
 
+        setupCaptureLocationControls();
         findViewById(R.id.settingsCustomColorButton).setOnClickListener(v -> showCustomColorPickerDialog());
         setupAccentPresets();
         applySettingsAccent();
@@ -128,6 +158,47 @@ public class SettingsActivity extends AppCompatActivity {
             }
         } catch (Exception ignored) {}
         versionText.setText("Version " + versionName);
+    }
+
+    private void setupCaptureLocationControls() {
+        int mode = StreamRecorder.getCaptureLocationMode(this);
+        if (mode == StreamRecorder.LOCATION_DOWNLOADS) {
+            captureLocationGroup.check(R.id.captureDownloadsRadio);
+        } else if (mode == StreamRecorder.LOCATION_CUSTOM && !StreamRecorder.getCustomFolderUri(this).isEmpty()) {
+            captureLocationGroup.check(R.id.captureCustomRadio);
+        } else {
+            captureLocationGroup.check(R.id.captureMusicRadio);
+        }
+        updateCaptureFolderLabel();
+
+        captureLocationGroup.setOnCheckedChangeListener((group, checkedId) -> {
+            if (checkedId == R.id.captureDownloadsRadio) {
+                StreamRecorder.setCaptureLocationMode(this, StreamRecorder.LOCATION_DOWNLOADS);
+            } else if (checkedId == R.id.captureCustomRadio) {
+                if (StreamRecorder.getCustomFolderUri(this).isEmpty()) {
+                    chooseCaptureFolderLauncher.launch(null);
+                } else {
+                    StreamRecorder.setCaptureLocationMode(this, StreamRecorder.LOCATION_CUSTOM);
+                }
+            } else {
+                StreamRecorder.setCaptureLocationMode(this, StreamRecorder.LOCATION_MUSIC);
+            }
+        });
+
+        findViewById(R.id.settingsChooseCaptureFolderButton).setOnClickListener(v ->
+                chooseCaptureFolderLauncher.launch(null));
+    }
+
+    private void updateCaptureFolderLabel() {
+        if (captureCustomFolderText == null) return;
+        String uriStr = StreamRecorder.getCustomFolderUri(this);
+        if (uriStr == null || uriStr.isEmpty()) {
+            captureCustomFolderText.setText("No custom folder selected");
+        } else {
+            Uri uri = Uri.parse(uriStr);
+            String seg = uri.getLastPathSegment();
+            captureCustomFolderText.setText("Folder: " + (seg != null ? seg : uriStr));
+        }
     }
 
     private void setupAccentPresets() {
@@ -174,12 +245,16 @@ public class SettingsActivity extends AppCompatActivity {
 
         if (settingsThemeHeader != null) settingsThemeHeader.setTextColor(accent);
         if (settingsAccentHeader != null) settingsAccentHeader.setTextColor(accent);
+        if (settingsCaptureHeader != null) settingsCaptureHeader.setTextColor(accent);
         if (settingsLibraryHeader != null) settingsLibraryHeader.setTextColor(accent);
         if (settingsAboutHeader != null) settingsAboutHeader.setTextColor(accent);
 
         ThemeHelper.tintRadioButton(themeSystemRadio, accent);
         ThemeHelper.tintRadioButton(themeDarkRadio, accent);
         ThemeHelper.tintRadioButton(themeLightRadio, accent);
+        ThemeHelper.tintRadioButton(captureMusicRadio, accent);
+        ThemeHelper.tintRadioButton(captureDownloadsRadio, accent);
+        ThemeHelper.tintRadioButton(captureCustomRadio, accent);
 
         if (accentPreviewSwatch != null) {
             GradientDrawable circle = new GradientDrawable();

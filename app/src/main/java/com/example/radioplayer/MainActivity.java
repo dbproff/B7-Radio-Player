@@ -12,14 +12,12 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.LruCache;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.EditText;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -74,18 +72,41 @@ public class MainActivity extends AppCompatActivity {
     private MarqueeTextView songTitleView;
     private TextView codecInfoView;
     private TextView sleepTimerStatus;
-    private TextView stationsTab, favoritesTab;
-    private View stationsTabIndicator, favoritesTabIndicator;
+    private static final int TAB_STATIONS = 0;
+    private static final int TAB_FAVORITES = 1;
+    private static final int TAB_RECORDED = 2;
+
+    private TextView stationsTab, favoritesTab, recordedTab;
+    private View stationsTabIndicator, favoritesTabIndicator, recordedTabIndicator;
     private View streamStatusIndicator;
-    private EditText stationFilterEdit;
+    private View captureHeaderRow, captureControlsRow, captureStatusDot;
+    private TextView captureHeaderText, captureFoldIndicator, captureDetailText;
+    private Button captureRecordPauseButton, captureStopButton;
+    private boolean capturePanelExpanded = false;
     private ImageView nowPlayingThumb;
     private SeekBar mainVolumeSeekBar;
     private AudioManager audioManager;
     private ListView stationListView;
     private StationAdapter stationAdapter;
+    private RecordedAdapter recordedAdapter;
+    private final List<StreamRecorder.RecordedItem> recordedItems = new ArrayList<>();
+    private Uri currentRecordedUri = null;
     private int editingPosition = -1;
-    private boolean showingFavorites = true;
-    private String currentFilter = "";
+    private int currentTab = TAB_FAVORITES;
+
+    private final StreamRecorder.Listener recorderListener = new StreamRecorder.Listener() {
+        @Override
+        public void onRecorderStateChanged(int state, String stationTitle, String fileName,
+                                           long elapsedMs, long bytesWritten, String errorMessage) {
+            updateCapturePanelUI(state, stationTitle, fileName, elapsedMs, bytesWritten, errorMessage);
+        }
+
+        @Override
+        public void onRecordingFinished() {
+            Toast.makeText(MainActivity.this, "Recording saved", Toast.LENGTH_SHORT).show();
+            loadRecordedItemsAsync();
+        }
+    };
     private final Handler timeoutHandler = new Handler(Looper.getMainLooper());
     private final Handler sleepPollHandler = new Handler(Looper.getMainLooper());
     private final ExecutorService networkExecutor = Executors.newFixedThreadPool(3);
@@ -119,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
                     } else if (updatedStation != null) {
                         if (isNew) {
                             allStations.add(updatedStation);
-                            showingFavorites = false;
+                            currentTab = TAB_STATIONS;
                             updateTabUI();
                         } else if (editingPosition != -1 && editingPosition < displayedStations.size()) {
                             RadioStationParser.RadioStation oldStation = displayedStations.get(editingPosition);
@@ -146,7 +167,7 @@ public class MainActivity extends AppCompatActivity {
                             (ArrayList<RadioStationParser.RadioStation>) result.getData().getSerializableExtra("added_stations");
                     if (added != null && !added.isEmpty()) {
                         int count = StationStore.mergeStations(allStations, added);
-                        showingFavorites = false;
+                        currentTab = TAB_STATIONS;
                         updateTabUI();
                         updateDisplayedStations();
                         saveAndSyncStations();
@@ -202,13 +223,23 @@ public class MainActivity extends AppCompatActivity {
         mainVolumeSeekBar = findViewById(R.id.mainVolumeSeekBar);
         audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
         setupVolumeControl();
-        stationFilterEdit = findViewById(R.id.stationFilterEdit);
         stationListView = findViewById(R.id.stationListView);
         stationsTab = findViewById(R.id.stationsTab);
         favoritesTab = findViewById(R.id.favoritesTab);
+        recordedTab = findViewById(R.id.recordedTab);
         stationsTabIndicator = findViewById(R.id.stationsTabIndicator);
         favoritesTabIndicator = findViewById(R.id.favoritesTabIndicator);
+        recordedTabIndicator = findViewById(R.id.recordedTabIndicator);
         streamStatusIndicator = findViewById(R.id.streamStatusIndicator);
+
+        captureHeaderRow = findViewById(R.id.captureHeaderRow);
+        captureControlsRow = findViewById(R.id.captureControlsRow);
+        captureStatusDot = findViewById(R.id.captureStatusDot);
+        captureHeaderText = findViewById(R.id.captureHeaderText);
+        captureFoldIndicator = findViewById(R.id.captureFoldIndicator);
+        captureDetailText = findViewById(R.id.captureDetailText);
+        captureRecordPauseButton = findViewById(R.id.captureRecordPauseButton);
+        captureStopButton = findViewById(R.id.captureStopButton);
 
         applyDynamicThumbSize();
 
@@ -217,28 +248,33 @@ public class MainActivity extends AppCompatActivity {
         updateDisplayedStations();
 
         stationAdapter = new StationAdapter(this, displayedStations);
+        recordedAdapter = new RecordedAdapter();
         stationListView.setAdapter(stationAdapter);
         applyAccentColor();
+        setupCapturePanel();
+        StreamRecorder.getInstance().addListener(recorderListener);
 
         stationListView.setOnItemClickListener((parent, view, position, id) -> {
-            if (position >= 0 && position < displayedStations.size()) {
+            if (currentTab == TAB_RECORDED) {
+                if (position >= 0 && position < recordedItems.size()) {
+                    playRecordedItem(recordedItems.get(position));
+                }
+            } else if (position >= 0 && position < displayedStations.size()) {
                 playStation(displayedStations.get(position));
             }
         });
 
         stationListView.setOnItemLongClickListener((parent, view, position, id) -> {
+            if (currentTab == TAB_RECORDED) {
+                if (position >= 0 && position < recordedItems.size()) {
+                    showRecordedContextMenu(view, recordedItems.get(position));
+                    return true;
+                }
+                return false;
+            }
             if (position < 0 || position >= displayedStations.size()) return false;
             showStationContextMenu(view, position);
             return true;
-        });
-
-        stationFilterEdit.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                currentFilter = s != null ? s.toString().trim().toLowerCase(Locale.US) : "";
-                updateDisplayedStations();
-            }
-            @Override public void afterTextChanged(Editable s) {}
         });
 
         playPauseButton.setOnClickListener(v -> togglePlayback());
@@ -257,15 +293,21 @@ public class MainActivity extends AppCompatActivity {
         mainMenuAnchor.setOnClickListener(v -> showMainMenu());
 
         stationsTab.setOnClickListener(v -> {
-            showingFavorites = false;
+            currentTab = TAB_STATIONS;
             updateTabUI();
             updateDisplayedStations();
         });
 
         favoritesTab.setOnClickListener(v -> {
-            showingFavorites = true;
+            currentTab = TAB_FAVORITES;
             updateTabUI();
             updateDisplayedStations();
+        });
+
+        recordedTab.setOnClickListener(v -> {
+            currentTab = TAB_RECORDED;
+            updateTabUI();
+            loadRecordedItemsAsync();
         });
 
         updateTabUI();
@@ -317,6 +359,9 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         syncVolumeSlider();
         applyAccentColor();
+        if (currentTab == TAB_RECORDED) {
+            loadRecordedItemsAsync();
+        }
     }
 
     private void applyAccentColor() {
@@ -336,9 +381,18 @@ public class MainActivity extends AppCompatActivity {
         if (favoritesTabIndicator != null) {
             favoritesTabIndicator.setBackgroundColor(accent);
         }
+        if (recordedTabIndicator != null) {
+            recordedTabIndicator.setBackgroundColor(accent);
+        }
+        if (captureRecordPauseButton != null) {
+            captureRecordPauseButton.setBackgroundTintList(ColorStateList.valueOf(accent));
+        }
         ThemeHelper.tintSeekBar(mainVolumeSeekBar, accent);
         if (stationAdapter != null) {
             stationAdapter.notifyDataSetChanged();
+        }
+        if (recordedAdapter != null) {
+            recordedAdapter.notifyDataSetChanged();
         }
     }
 
@@ -398,19 +452,105 @@ public class MainActivity extends AppCompatActivity {
         popup.show();
     }
 
+    private void setupCapturePanel() {
+        if (captureHeaderRow != null) {
+            captureHeaderRow.setOnClickListener(v -> {
+                capturePanelExpanded = !capturePanelExpanded;
+                if (captureControlsRow != null) {
+                    captureControlsRow.setVisibility(capturePanelExpanded ? View.VISIBLE : View.GONE);
+                }
+                if (captureFoldIndicator != null) {
+                    captureFoldIndicator.setText(capturePanelExpanded ? "▲" : "▼");
+                }
+            });
+        }
+        if (captureRecordPauseButton != null) {
+            captureRecordPauseButton.setOnClickListener(v -> {
+                StreamRecorder recorder = StreamRecorder.getInstance();
+                int st = recorder.getState();
+                if (st == StreamRecorder.STATE_IDLE) {
+                    if (currentStation == null || currentStation.source == null || currentStation.source.trim().isEmpty()) {
+                        Toast.makeText(this, "Play a radio station first", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    recorder.startRecording(this, currentStation.source, StationStore.safeTitle(currentStation));
+                } else if (st == StreamRecorder.STATE_RECORDING) {
+                    recorder.pauseRecording();
+                } else if (st == StreamRecorder.STATE_PAUSED) {
+                    recorder.resumeRecording();
+                }
+            });
+        }
+        if (captureStopButton != null) {
+            captureStopButton.setOnClickListener(v -> StreamRecorder.getInstance().stopRecording());
+        }
+    }
+
+    private void updateCapturePanelUI(int state, String stationTitle, String fileName,
+                                      long elapsedMs, long bytesWritten, String errorMessage) {
+        if (captureHeaderText == null) return;
+        String timeStr = StreamRecorder.formatDuration(elapsedMs);
+        String sizeStr = StreamRecorder.formatSize(bytesWritten);
+
+        if (state == StreamRecorder.STATE_RECORDING) {
+            captureHeaderText.setText("REC • " + timeStr + " • " + sizeStr);
+            if (captureStatusDot != null) captureStatusDot.setAlpha(1.0f);
+            if (captureRecordPauseButton != null) captureRecordPauseButton.setText("Pause");
+            if (captureStopButton != null) captureStopButton.setEnabled(true);
+            if (captureDetailText != null) {
+                captureDetailText.setText(fileName != null ? fileName : ("Recording " + stationTitle));
+            }
+        } else if (state == StreamRecorder.STATE_PAUSED) {
+            captureHeaderText.setText("PAUSED • " + timeStr + " • " + sizeStr);
+            if (captureStatusDot != null) captureStatusDot.setAlpha(0.6f);
+            if (captureRecordPauseButton != null) captureRecordPauseButton.setText("Resume");
+            if (captureStopButton != null) captureStopButton.setEnabled(true);
+            if (captureDetailText != null) {
+                captureDetailText.setText("Paused" + (fileName != null ? " — " + fileName : ""));
+            }
+        } else {
+            captureHeaderText.setText("Stream Capture");
+            if (captureStatusDot != null) captureStatusDot.setAlpha(0.35f);
+            if (captureRecordPauseButton != null) captureRecordPauseButton.setText("Record");
+            if (captureStopButton != null) captureStopButton.setEnabled(false);
+            if (captureDetailText != null) {
+                if (errorMessage != null && !errorMessage.isEmpty()) {
+                    captureDetailText.setText("Capture error: " + errorMessage);
+                } else {
+                    captureDetailText.setText("Tap Record to capture the playing stream");
+                }
+            }
+        }
+    }
+
     private void updateTabUI() {
         int activeColor = ContextCompat.getColor(this, R.color.app_text_primary);
         int inactiveColor = ContextCompat.getColor(this, R.color.app_text_secondary);
-        if (showingFavorites) {
-            favoritesTab.setTextColor(activeColor);
-            stationsTab.setTextColor(inactiveColor);
-            if (favoritesTabIndicator != null) favoritesTabIndicator.setVisibility(View.VISIBLE);
-            if (stationsTabIndicator != null) stationsTabIndicator.setVisibility(View.INVISIBLE);
+
+        stationsTab.setTextColor(currentTab == TAB_STATIONS ? activeColor : inactiveColor);
+        favoritesTab.setTextColor(currentTab == TAB_FAVORITES ? activeColor : inactiveColor);
+        if (recordedTab != null) {
+            recordedTab.setTextColor(currentTab == TAB_RECORDED ? activeColor : inactiveColor);
+        }
+
+        if (stationsTabIndicator != null) {
+            stationsTabIndicator.setVisibility(currentTab == TAB_STATIONS ? View.VISIBLE : View.INVISIBLE);
+        }
+        if (favoritesTabIndicator != null) {
+            favoritesTabIndicator.setVisibility(currentTab == TAB_FAVORITES ? View.VISIBLE : View.INVISIBLE);
+        }
+        if (recordedTabIndicator != null) {
+            recordedTabIndicator.setVisibility(currentTab == TAB_RECORDED ? View.VISIBLE : View.INVISIBLE);
+        }
+
+        if (currentTab == TAB_RECORDED) {
+            if (stationListView.getAdapter() != recordedAdapter) {
+                stationListView.setAdapter(recordedAdapter);
+            }
         } else {
-            stationsTab.setTextColor(activeColor);
-            favoritesTab.setTextColor(inactiveColor);
-            if (stationsTabIndicator != null) stationsTabIndicator.setVisibility(View.VISIBLE);
-            if (favoritesTabIndicator != null) favoritesTabIndicator.setVisibility(View.INVISIBLE);
+            if (stationListView.getAdapter() != stationAdapter) {
+                stationListView.setAdapter(stationAdapter);
+            }
         }
     }
 
@@ -420,17 +560,83 @@ public class MainActivity extends AppCompatActivity {
         displayedStations.clear();
         for (RadioStationParser.RadioStation s : allStations) {
             if (s == null) continue;
-            if (showingFavorites && !s.isFavorite) continue;
-            if (!currentFilter.isEmpty()) {
-                String titleMatch = StationStore.safeTitle(s).toLowerCase(Locale.US);
-                String tagsMatch = s.tags != null ? s.tags.toLowerCase(Locale.US) : "";
-                if (!titleMatch.contains(currentFilter) && !tagsMatch.contains(currentFilter)) {
-                    continue;
-                }
-            }
+            if (currentTab == TAB_FAVORITES && !s.isFavorite) continue;
             displayedStations.add(s);
         }
         if (stationAdapter != null) stationAdapter.notifyDataSetChanged();
+    }
+
+    private void loadRecordedItemsAsync() {
+        networkExecutor.execute(() -> {
+            List<StreamRecorder.RecordedItem> loaded = StreamRecorder.listRecordings(MainActivity.this);
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                recordedItems.clear();
+                recordedItems.addAll(loaded);
+                if (recordedAdapter != null) {
+                    recordedAdapter.notifyDataSetChanged();
+                }
+            });
+        });
+    }
+
+    private void playRecordedItem(StreamRecorder.RecordedItem item) {
+        if (item == null || item.uri == null || mediaController == null) return;
+        currentStation = null;
+        currentRecordedUri = item.uri;
+        MediaMetadata meta = new MediaMetadata.Builder()
+                .setTitle(item.displayName)
+                .setArtist("Recorded Stream")
+                .build();
+        MediaItem mediaItem = new MediaItem.Builder()
+                .setMediaId("recorded:" + item.uri)
+                .setUri(item.uri)
+                .setMediaMetadata(meta)
+                .build();
+        mediaController.setMediaItem(mediaItem);
+        mediaController.prepare();
+        mediaController.play();
+        if (currentStationView != null) {
+            currentStationView.setText(item.displayName);
+        }
+        if (songTitleView != null) {
+            songTitleView.setText("Recorded Stream • " + StreamRecorder.formatSize(item.sizeBytes));
+        }
+        if (nowPlayingThumb != null) {
+            nowPlayingThumb.setImageResource(R.mipmap.ic_launcher);
+        }
+        if (stationAdapter != null) stationAdapter.notifyDataSetChanged();
+        if (recordedAdapter != null) recordedAdapter.notifyDataSetChanged();
+    }
+
+    private void showRecordedContextMenu(View anchor, StreamRecorder.RecordedItem item) {
+        PopupMenu popup = new PopupMenu(this, anchor);
+        popup.getMenu().add("Play");
+        popup.getMenu().add("Delete");
+        popup.setOnMenuItemClickListener(menuItem -> {
+            CharSequence title = menuItem.getTitle();
+            if ("Play".equals(title)) {
+                playRecordedItem(item);
+            } else if ("Delete".equals(title)) {
+                new AlertDialog.Builder(this)
+                        .setTitle("Delete Recording")
+                        .setMessage("Delete \"" + item.displayName + "\"?")
+                        .setPositiveButton("Delete", (d, w) -> {
+                            boolean ok = StreamRecorder.deleteRecording(this, item);
+                            if (ok) {
+                                recordedItems.remove(item);
+                                if (recordedAdapter != null) recordedAdapter.notifyDataSetChanged();
+                                Toast.makeText(this, "Recording deleted", Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(this, "Could not delete recording", Toast.LENGTH_SHORT).show();
+                            }
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            }
+            return true;
+        });
+        popup.show();
     }
 
     private void showMainMenu() {
@@ -550,7 +756,7 @@ public class MainActivity extends AppCompatActivity {
                         return;
                     }
                     int added = StationStore.mergeStations(allStations, parsed);
-                    showingFavorites = false;
+                    currentTab = TAB_STATIONS;
                     updateTabUI();
                     updateDisplayedStations();
                     saveAndSyncStations();
@@ -647,6 +853,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        StreamRecorder.getInstance().removeListener(recorderListener);
         networkExecutor.shutdownNow();
     }
 
@@ -878,6 +1085,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void playStation(RadioStationParser.RadioStation station) {
         if (station == null || station.source == null || station.source.trim().isEmpty()) return;
+        currentRecordedUri = null;
         currentStation = station;
         if (mediaController != null) {
             MediaMetadata.Builder metaBuilder = new MediaMetadata.Builder()
@@ -1007,7 +1215,7 @@ public class MainActivity extends AppCompatActivity {
             holder.favIcon.setOnClickListener(v -> {
                 station.isFavorite = !station.isFavorite;
                 saveAndSyncStations();
-                if (showingFavorites) {
+                if (currentTab == TAB_FAVORITES) {
                     updateDisplayedStations();
                 } else {
                     notifyDataSetChanged();
@@ -1026,6 +1234,58 @@ public class MainActivity extends AppCompatActivity {
                 convertView.setBackgroundColor(Color.TRANSPARENT);
             }
 
+            return convertView;
+        }
+    }
+
+    private class RecordedAdapter extends ArrayAdapter<StreamRecorder.RecordedItem> {
+        private final java.text.DateFormat dateFormat = java.text.DateFormat.getDateTimeInstance(
+                java.text.DateFormat.SHORT, java.text.DateFormat.SHORT);
+
+        RecordedAdapter() {
+            super(MainActivity.this, R.layout.station_list_item, recordedItems);
+        }
+
+        @NonNull
+        @Override
+        public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+            StationViewHolder holder;
+            if (convertView == null) {
+                convertView = getLayoutInflater().inflate(R.layout.station_list_item, parent, false);
+                holder = new StationViewHolder();
+                holder.nowPlayingIndicator = convertView.findViewById(R.id.nowPlayingIndicator);
+                holder.icon = convertView.findViewById(R.id.stationIcon);
+                holder.title = convertView.findViewById(R.id.stationTitle);
+                holder.subtitle = convertView.findViewById(R.id.stationSubtitle);
+                holder.favIcon = convertView.findViewById(R.id.favoriteStar);
+                convertView.setTag(holder);
+            } else {
+                holder = (StationViewHolder) convertView.getTag();
+            }
+
+            StreamRecorder.RecordedItem item = getItem(position);
+            if (item != null) {
+                holder.title.setText(item.displayName);
+                String meta = StreamRecorder.formatSize(item.sizeBytes);
+                if (item.dateAddedMs > 0) {
+                    meta += " · " + dateFormat.format(new java.util.Date(item.dateAddedMs));
+                }
+                holder.subtitle.setText(meta);
+                holder.subtitle.setVisibility(View.VISIBLE);
+                holder.icon.setImageResource(R.mipmap.ic_launcher);
+
+                int accent = ThemeHelper.getAccentColor(MainActivity.this);
+                holder.favIcon.setText("▶");
+                holder.favIcon.setTextColor(accent);
+                holder.favIcon.setOnClickListener(v -> playRecordedItem(item));
+
+                boolean isCurrent = currentRecordedUri != null && currentRecordedUri.equals(item.uri);
+                holder.nowPlayingIndicator.setBackgroundColor(accent);
+                holder.nowPlayingIndicator.setVisibility(isCurrent ? View.VISIBLE : View.INVISIBLE);
+                convertView.setBackgroundColor(isCurrent
+                        ? ThemeHelper.getSelectedRowColor(MainActivity.this)
+                        : Color.TRANSPARENT);
+            }
             return convertView;
         }
     }

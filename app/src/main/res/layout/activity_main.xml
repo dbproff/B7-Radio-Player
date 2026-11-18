@@ -1,364 +1,124 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="12dp"
-    android:background="@color/app_background">
+    xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="12dp" android:background="@color/app_background">
 
     <!-- Top App Bar -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginBottom="8dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="8dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/app_name"
-            android:textColor="@color/app_text_primary"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:paddingStart="4dp"
-            android:paddingEnd="8dp" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/app_name" android:textColor="@color/app_text_primary" android:textSize="18sp" android:textStyle="bold" android:paddingStart="4dp" android:paddingEnd="8dp" />
 
-        <TextView
-            android:id="@+id/sleepTimerStatus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_codec_pill"
-            android:paddingHorizontal="8dp"
-            android:paddingVertical="3dp"
-            android:text=""
-            android:textColor="@color/app_accent"
-            android:textSize="11sp"
-            android:textStyle="bold"
-            android:visibility="gone" />
+        <TextView android:id="@+id/sleepTimerStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:background="@drawable/bg_codec_pill" android:paddingHorizontal="8dp" android:paddingVertical="3dp" android:text="" android:textColor="@color/app_accent" android:textSize="11sp" android:textStyle="bold" android:visibility="gone" />
 
-        <View
-            android:id="@+id/topSpacer"
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1" />
+        <View android:id="@+id/topSpacer" android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
 
-        <ImageButton
-            android:id="@+id/searchOnlineButton"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Search Internet Radio"
-            android:padding="12dp"
-            android:src="@drawable/ic_search"
-            app:tint="@color/app_text_primary" />
+        <ImageButton android:id="@+id/searchOnlineButton" android:layout_width="48dp" android:layout_height="48dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Search Internet Radio" android:padding="12dp" android:src="@drawable/ic_search" app:tint="@color/app_text_primary" />
 
-        <ImageButton
-            android:id="@+id/addStationButton"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Add Station"
-            android:padding="12dp"
-            android:src="@drawable/ic_add"
-            app:tint="@color/app_text_primary" />
+        <ImageButton android:id="@+id/addStationButton" android:layout_width="48dp" android:layout_height="48dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Add Station" android:padding="12dp" android:src="@drawable/ic_add" app:tint="@color/app_text_primary" />
 
-        <ImageButton
-            android:id="@+id/mainMenuAnchor"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="More options"
-            android:padding="12dp"
-            android:src="@drawable/ic_more_vert"
-            app:tint="@color/app_text_primary" />
+        <ImageButton android:id="@+id/mainMenuAnchor" android:layout_width="48dp" android:layout_height="48dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="More options" android:padding="12dp" android:src="@drawable/ic_more_vert" app:tint="@color/app_text_primary" />
     </LinearLayout>
 
     <!-- Now Playing Card -->
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="10dp"
-        app:cardBackgroundColor="@color/app_surface"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="2dp"
-        app:strokeWidth="0dp">
+    <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="10dp" app:cardBackgroundColor="@color/app_surface" app:cardCornerRadius="16dp" app:cardElevation="2dp" app:strokeWidth="0dp">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="14dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="14dp">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="10dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="10dp">
 
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="14dp"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="0dp"
-                    app:strokeWidth="0dp">
+                <com.google.android.material.card.MaterialCardView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginEnd="14dp" app:cardCornerRadius="12dp" app:cardElevation="0dp" app:strokeWidth="0dp">
 
-                    <ImageView
-                        android:id="@+id/nowPlayingThumb"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:scaleType="centerCrop"
-                        android:src="@mipmap/ic_launcher"
-                        android:contentDescription="Current station thumbnail" />
+                    <ImageView android:id="@+id/nowPlayingThumb" android:layout_width="56dp" android:layout_height="56dp" android:scaleType="centerCrop" android:src="@mipmap/ic_launcher" android:contentDescription="Current station thumbnail" />
                 </com.google.android.material.card.MaterialCardView>
 
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
 
-                        <com.example.radioplayer.MarqueeTextView
-                            android:id="@+id/currentStationView"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:singleLine="true"
-                            android:ellipsize="marquee"
-                            android:marqueeRepeatLimit="marquee_forever"
-                            android:scrollHorizontally="true"
-                            android:focusable="true"
-                            android:focusableInTouchMode="true"
-                            android:text="@string/select_station"
-                            android:textColor="@color/app_text_primary"
-                            android:textSize="16sp"
-                            android:textStyle="bold" />
+                        <com.example.radioplayer.MarqueeTextView android:id="@+id/currentStationView" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:singleLine="true" android:ellipsize="marquee" android:marqueeRepeatLimit="marquee_forever" android:scrollHorizontally="true" android:focusable="true" android:focusableInTouchMode="true" android:text="@string/select_station" android:textColor="@color/app_text_primary" android:textSize="16sp" android:textStyle="bold" />
 
-                        <View
-                            android:id="@+id/streamStatusIndicator"
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:layout_marginStart="10dp"
-                            android:background="@drawable/status_circle_red" />
+                        <View android:id="@+id/streamStatusIndicator" android:layout_width="32dp" android:layout_height="32dp" android:layout_marginStart="10dp" android:background="@drawable/status_circle_red" />
                     </LinearLayout>
 
-                    <com.example.radioplayer.MarqueeTextView
-                        android:id="@+id/songTitleView"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:minHeight="20dp"
-                        android:layout_marginTop="2dp"
-                        android:singleLine="true"
-                        android:ellipsize="marquee"
-                        android:marqueeRepeatLimit="marquee_forever"
-                        android:scrollHorizontally="true"
-                        android:focusable="true"
-                        android:focusableInTouchMode="true"
-                        android:text=""
-                        android:textSize="13sp"
-                        android:textColor="@color/app_accent" />
+                    <com.example.radioplayer.MarqueeTextView android:id="@+id/songTitleView" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="20dp" android:layout_marginTop="2dp" android:singleLine="true" android:ellipsize="marquee" android:marqueeRepeatLimit="marquee_forever" android:scrollHorizontally="true" android:focusable="true" android:focusableInTouchMode="true" android:text="" android:textSize="13sp" android:textColor="@color/app_accent" />
 
-                    <TextView
-                        android:id="@+id/codecInfoView"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:background="@drawable/bg_codec_pill"
-                        android:paddingHorizontal="8dp"
-                        android:paddingVertical="2dp"
-                        android:text=""
-                        android:textColor="@color/app_text_secondary"
-                        android:textSize="11sp"
-                        android:visibility="gone" />
+                    <TextView android:id="@+id/codecInfoView" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:background="@drawable/bg_codec_pill" android:paddingHorizontal="8dp" android:paddingVertical="2dp" android:text="" android:textColor="@color/app_text_secondary" android:textSize="11sp" android:visibility="gone" />
                 </LinearLayout>
             </LinearLayout>
 
             <!-- Volume (<=50%) + Larger/Bolder Transport Controls -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
 
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="0.42"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginEnd="4dp">
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="0.42" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginEnd="4dp">
 
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/ic_volume"
-                        android:contentDescription="@string/volume_label"
-                        app:tint="@color/app_text_secondary" />
+                    <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_volume" android:contentDescription="@string/volume_label" app:tint="@color/app_text_secondary" />
 
-                    <SeekBar
-                        android:id="@+id/mainVolumeSeekBar"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:minHeight="48dp"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp"
-                        android:progressDrawable="@drawable/volume_progress"
-                        android:splitTrack="false"
-                        android:thumb="@drawable/volume_thumb" />
+                    <SeekBar android:id="@+id/mainVolumeSeekBar" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:minHeight="48dp" android:paddingStart="16dp" android:paddingEnd="16dp" android:progressDrawable="@drawable/volume_progress" android:splitTrack="false" android:thumb="@drawable/volume_thumb" />
                 </LinearLayout>
 
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="0.58"
-                    android:orientation="horizontal"
-                    android:gravity="center">
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="0.58" android:orientation="horizontal" android:gravity="center">
 
-                    <ImageButton
-                        android:id="@+id/previousButton"
-                        android:layout_width="@dimen/player_btn_size"
-                        android:layout_height="@dimen/player_btn_size"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Previous station"
-                        android:padding="@dimen/player_btn_padding"
-                        android:scaleType="fitCenter"
-                        android:src="@drawable/ic_skip_previous"
-                        app:tint="@color/app_text_primary" />
+                    <ImageButton android:id="@+id/previousButton" android:layout_width="@dimen/player_btn_size" android:layout_height="@dimen/player_btn_size" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Previous station" android:padding="@dimen/player_btn_padding" android:scaleType="fitCenter" android:src="@drawable/ic_skip_previous" app:tint="@color/app_text_primary" />
 
-                    <ImageButton
-                        android:id="@+id/playPauseButton"
-                        android:layout_width="@dimen/player_play_size"
-                        android:layout_height="@dimen/player_play_size"
-                        android:layout_marginHorizontal="@dimen/player_play_margin"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Play or Pause"
-                        android:padding="2dp"
-                        android:scaleType="fitCenter"
-                        android:src="@drawable/ic_play"
-                        app:tint="@color/app_accent" />
+                    <ImageButton android:id="@+id/playPauseButton" android:layout_width="@dimen/player_play_size" android:layout_height="@dimen/player_play_size" android:layout_marginHorizontal="@dimen/player_play_margin" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Play or Pause" android:padding="2dp" android:scaleType="fitCenter" android:src="@drawable/ic_play" app:tint="@color/app_accent" />
 
-                    <ImageButton
-                        android:id="@+id/nextButton"
-                        android:layout_width="@dimen/player_btn_size"
-                        android:layout_height="@dimen/player_btn_size"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Next station"
-                        android:padding="@dimen/player_btn_padding"
-                        android:scaleType="fitCenter"
-                        android:src="@drawable/ic_skip_next"
-                        app:tint="@color/app_text_primary" />
+                    <ImageButton android:id="@+id/nextButton" android:layout_width="@dimen/player_btn_size" android:layout_height="@dimen/player_btn_size" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Next station" android:padding="@dimen/player_btn_padding" android:scaleType="fitCenter" android:src="@drawable/ic_skip_next" app:tint="@color/app_text_primary" />
 
-                    <ImageButton
-                        android:id="@+id/equalizerButton"
-                        android:layout_width="@dimen/player_btn_size"
-                        android:layout_height="@dimen/player_btn_size"
-                        android:layout_marginStart="@dimen/player_eq_margin"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="@string/sound_equalizer"
-                        android:padding="@dimen/player_btn_padding"
-                        android:scaleType="fitCenter"
-                        android:src="@drawable/ic_equalizer"
-                        app:tint="@color/app_text_primary" />
+                    <ImageButton android:id="@+id/equalizerButton" android:layout_width="@dimen/player_btn_size" android:layout_height="@dimen/player_btn_size" android:layout_marginStart="@dimen/player_eq_margin" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="@string/sound_equalizer" android:padding="@dimen/player_btn_padding" android:scaleType="fitCenter" android:src="@drawable/ic_equalizer" app:tint="@color/app_text_primary" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Local Filter -->
-    <EditText
-        android:id="@+id/stationFilterEdit"
-        android:layout_width="match_parent"
-        android:layout_height="42dp"
-        android:layout_marginBottom="4dp"
-        android:background="@drawable/bg_codec_pill"
-        android:hint="Filter stations..."
-        android:inputType="text"
-        android:maxLines="1"
-        android:paddingHorizontal="14dp"
-        android:textColor="@color/app_text_primary"
-        android:textColorHint="@color/app_text_secondary"
-        android:textSize="13sp" />
+    <!-- Folding Stream Capture Panel -->
+    <LinearLayout android:id="@+id/capturePanel" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="4dp" android:background="@drawable/bg_codec_pill" android:orientation="vertical" android:paddingHorizontal="12dp" android:paddingVertical="8dp">
 
-    <!-- Tabs -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginBottom="4dp">
+        <LinearLayout android:id="@+id/captureHeaderRow" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal" android:clickable="true" android:focusable="true">
 
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center">
+            <View android:id="@+id/captureStatusDot" android:layout_width="10dp" android:layout_height="10dp" android:layout_marginEnd="8dp" android:background="@drawable/status_circle_red" android:alpha="0.35" />
 
-            <TextView
-                android:id="@+id/stationsTab"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:text="@string/stations_label"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:textColor="@color/app_text_primary"
-                android:clickable="true"
-                android:focusable="true" />
+            <TextView android:id="@+id/captureHeaderText" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Stream Capture" android:textColor="@color/app_text_primary" android:textSize="13sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
 
-            <View
-                android:id="@+id/stationsTabIndicator"
-                android:layout_width="match_parent"
-                android:layout_height="3dp"
-                android:background="@color/app_accent" />
+            <TextView android:id="@+id/captureFoldIndicator" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="▼" android:textColor="@color/app_text_secondary" android:textSize="12sp" android:paddingHorizontal="4dp" />
         </LinearLayout>
 
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center">
+        <LinearLayout android:id="@+id/captureControlsRow" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingTop="8dp" android:visibility="gone">
 
-            <TextView
-                android:id="@+id/favoritesTab"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:text="@string/favorites_label"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:textColor="@color/app_text_secondary"
-                android:clickable="true"
-                android:focusable="true" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
 
-            <View
-                android:id="@+id/favoritesTabIndicator"
-                android:layout_width="match_parent"
-                android:layout_height="3dp"
-                android:background="@color/app_accent"
-                android:visibility="invisible" />
+                <Button android:id="@+id/captureRecordPauseButton" android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1" android:layout_marginEnd="6dp" android:text="Record" android:textAllCaps="false" android:textSize="13sp" />
+
+                <Button android:id="@+id/captureStopButton" android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1" android:layout_marginStart="6dp" android:enabled="false" android:text="Stop" android:textAllCaps="false" android:textSize="13sp" />
+            </LinearLayout>
+
+            <TextView android:id="@+id/captureDetailText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="Ready to capture active stream" android:textColor="@color/app_text_secondary" android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
         </LinearLayout>
     </LinearLayout>
 
-    <ListView
-        android:id="@+id/stationListView"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:divider="@color/app_divider"
-        android:dividerHeight="1dp" />
+    <!-- Tabs -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="4dp">
+
+        <LinearLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
+
+            <TextView android:id="@+id/stationsTab" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:gravity="center" android:text="@string/stations_label" android:textSize="13sp" android:textStyle="bold" android:textColor="@color/app_text_primary" android:clickable="true" android:focusable="true" />
+
+            <View android:id="@+id/stationsTabIndicator" android:layout_width="match_parent" android:layout_height="3dp" android:background="@color/app_accent" />
+        </LinearLayout>
+
+        <LinearLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
+
+            <TextView android:id="@+id/favoritesTab" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:gravity="center" android:text="@string/favorites_label" android:textSize="13sp" android:textStyle="bold" android:textColor="@color/app_text_secondary" android:clickable="true" android:focusable="true" />
+
+            <View android:id="@+id/favoritesTabIndicator" android:layout_width="match_parent" android:layout_height="3dp" android:background="@color/app_accent" android:visibility="invisible" />
+        </LinearLayout>
+
+        <LinearLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
+
+            <TextView android:id="@+id/recordedTab" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:gravity="center" android:text="@string/recorded_label" android:textSize="13sp" android:textStyle="bold" android:textColor="@color/app_text_secondary" android:clickable="true" android:focusable="true" />
+
+            <View android:id="@+id/recordedTabIndicator" android:layout_width="match_parent" android:layout_height="3dp" android:background="@color/app_accent" android:visibility="invisible" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <ListView android:id="@+id/stationListView" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:divider="@color/app_divider" android:dividerHeight="1dp" />
 
 </LinearLayout>

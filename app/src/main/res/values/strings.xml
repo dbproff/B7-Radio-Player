@@ -2,6 +2,7 @@
     <string name="app_name">B7 Radio Player</string>
     <string name="stations_label">STATIONS</string>
     <string name="favorites_label">FAVORITES</string>
+    <string name="recorded_label">RECORDED</string>
     <string name="select_station">Select a station below</string>
     <string name="waiting_for_stream">...</string>
     <string name="symbol_previous">⏮</string>
