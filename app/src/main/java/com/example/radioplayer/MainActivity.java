@@ -1292,7 +1292,9 @@ public class MainActivity extends AppCompatActivity {
                 }
                 holder.subtitle.setText(meta);
                 holder.subtitle.setVisibility(View.VISIBLE);
-                holder.icon.setImageResource(R.mipmap.ic_launcher);
+                if (holder.icon.getParent() instanceof View) {
+                    ((View) holder.icon.getParent()).setVisibility(View.GONE);
+                }
 
                 int accent = ThemeHelper.getAccentColor(MainActivity.this);
                 holder.favIcon.setText("▶");
