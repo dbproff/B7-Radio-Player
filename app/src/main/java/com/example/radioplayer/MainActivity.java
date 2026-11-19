@@ -1300,18 +1300,35 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void setDefaultStationIcon(ImageView target) {
+        if (target == null) return;
+        if (target == nowPlayingThumb) {
+            target.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            target.setImageResource(R.mipmap.ic_launcher);
+            return;
+        }
+        int sizePx = Math.round(32f * getResources().getDisplayMetrics().density);
+        android.graphics.drawable.GradientDrawable bullet = new android.graphics.drawable.GradientDrawable();
+        bullet.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+        bullet.setSize(sizePx, sizePx);
+        bullet.setColor(ThemeHelper.getAccentColor(this));
+        target.setScaleType(ImageView.ScaleType.CENTER);
+        target.setImageDrawable(bullet);
+    }
+
     private void loadFaviconAsync(String urlString, ImageView target) {
         if (target == null) return;
         if (urlString == null || urlString.isEmpty()) {
-            target.setImageResource(R.mipmap.ic_launcher);
+            setDefaultStationIcon(target);
             return;
         }
         Bitmap cached = iconCache.get(urlString);
         if (cached != null) {
+            target.setScaleType(ImageView.ScaleType.CENTER_CROP);
             target.setImageBitmap(cached);
             return;
         }
-        target.setImageResource(R.mipmap.ic_launcher);
+        setDefaultStationIcon(target);
         if (!iconLoading.add(urlString)) return;
 
         networkExecutor.execute(() -> {
@@ -1338,6 +1355,7 @@ public class MainActivity extends AppCompatActivity {
                     runOnUiThread(() -> {
                         if (!isFinishing() && !isDestroyed()) {
                             if (target == nowPlayingThumb && currentStation != null && Objects.equals(currentStation.favicon, urlString)) {
+                                nowPlayingThumb.setScaleType(ImageView.ScaleType.CENTER_CROP);
                                 nowPlayingThumb.setImageBitmap(finalBmp);
                             }
                             stationAdapter.notifyDataSetChanged();
@@ -1384,7 +1402,7 @@ public class MainActivity extends AppCompatActivity {
             RadioStationParser.RadioStation station = getItem(position);
             if (station == null) {
                 holder.nowPlayingIndicator.setVisibility(View.INVISIBLE);
-                holder.icon.setImageResource(R.mipmap.ic_launcher);
+                setDefaultStationIcon(holder.icon);
                 holder.title.setText("");
                 holder.subtitle.setVisibility(View.GONE);
                 holder.favIcon.setText("☆");
