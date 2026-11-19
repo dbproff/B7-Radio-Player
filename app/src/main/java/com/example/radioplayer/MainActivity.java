@@ -714,7 +714,7 @@ public class MainActivity extends AppCompatActivity {
             songTitleView.setText("Recorded Stream • " + StreamRecorder.formatSize(item.sizeBytes));
         }
         if (nowPlayingThumb != null) {
-            nowPlayingThumb.setImageResource(R.mipmap.ic_launcher);
+            setNowPlayingThumbVisible(false);
         }
         if (stationAdapter != null) stationAdapter.notifyDataSetChanged();
         if (recordedAdapter != null) recordedAdapter.notifyDataSetChanged();
@@ -1120,12 +1120,24 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void setNowPlayingThumbVisible(boolean visible) {
+        if (nowPlayingThumb != null && nowPlayingThumb.getParent() instanceof View) {
+            ((View) nowPlayingThumb.getParent()).setVisibility(visible ? View.VISIBLE : View.GONE);
+        }
+    }
+
     private void syncCurrentStation(@Nullable MediaItem mediaItem) {
+        if (mediaItem != null && mediaItem.mediaId.startsWith("recorded:")) {
+            currentStation = null;
+            setNowPlayingThumbVisible(false);
+            return;
+        }
         if (mediaItem != null && allStations != null) {
             for (RadioStationParser.RadioStation station : allStations) {
                 if (station != null && Objects.equals(station.source, mediaItem.mediaId)) {
                     currentStation = station;
                     currentStationView.setText(StationStore.safeTitle(station));
+                    setNowPlayingThumbVisible(true);
                     loadFaviconAsync(station.favicon, nowPlayingThumb);
                     stationAdapter.notifyDataSetChanged();
                     break;
@@ -1295,6 +1307,7 @@ public class MainActivity extends AppCompatActivity {
             mediaController.play();
             updateBufferingUI();
             currentStationView.setText(StationStore.safeTitle(station));
+            setNowPlayingThumbVisible(true);
             loadFaviconAsync(station.favicon, nowPlayingThumb);
             stationAdapter.notifyDataSetChanged();
         }
