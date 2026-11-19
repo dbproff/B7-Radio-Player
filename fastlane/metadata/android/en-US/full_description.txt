@@ -1,9 +1,12 @@
 B7 Radio Player is a lightweight, open-source internet radio player for Android powered by Media3.
 
 Features:
-- Stream MP3 and AAC internet radio stations (including .m3u and .pls links)
-- Search and add stations from Radio Browser
-- Built-in equalizer with Bass, Mid, and Treble controls
-- Manage favorites, station details, and custom station lists
-- Import and export station playlists (XML)
+- Stream MP3, AAC, and OGG internet radio stations (including .m3u and .pls links)
+- Browse and search stations by name, country, and genre via Radio Browser
+- Folding Stream Capture panel (Record, Pause, Stop) with auto-split per song and automatic MP3 ID3 tags
+- Recorded tab with seekable in-app replay and multi-select delete
+- Configurable capture destination (Music, Downloads, or custom folder)
+- Customizable accent color presets and interactive Color Wheel picker, plus Light/Dark themes
+- Built-in equalizer (Bass, Mid, Treble) and Sleep Timer
+- Manage favorites, station details, dead-station scanner, and import/export playlists (XML/M3U/PLS)
 - Background playback with lock screen and Android Auto media controls

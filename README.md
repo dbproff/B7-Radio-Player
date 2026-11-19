@@ -10,13 +10,17 @@ An open-source Android internet radio player built with AndroidX Media3.
 </p>
 
 ## Features
-- Stream live internet radio stations (MP3, AAC, M3U, PLS)
-- Search and add stations via Radio Browser
-- Built-in equalizer (Bass, Mid, Treble)
-- Favorites and custom station management
-- Import and export station playlists (`stations.xml`)
+- Stream live internet radio stations (MP3, AAC, OGG, M3U, PLS)
+- Browse and search stations by name, country, and genre via Radio Browser
+- Folding **Stream Capture** panel with Record / Pause / Stop controls
+- Auto-split recordings on song change with automatic MP3 ID3v2.3 tags (Title, Artist, Station/Album)
+- **Recorded** tab with in-app seekable replay and multi-select bulk delete
+- Configurable capture folder in Settings (`Music`, `Downloads`, or custom folder)
+- Custom **Controls & Highlights Color** presets and interactive HSV Color Wheel picker (plus Light/Dark/System theme)
+- Built-in equalizer (Bass, Mid, Treble) and Sleep Timer
+- Favorites, custom station management, and dead-station scanner
+- Import and export station playlists (`XML` / `M3U` / `PLS`)
 - Background playback with lock screen and Android Auto controls
-- Station details and connection status monitoring
 
 ## Build Instructions
 
