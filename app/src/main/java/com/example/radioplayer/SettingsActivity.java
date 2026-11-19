@@ -319,77 +319,116 @@ public class SettingsActivity extends AppCompatActivity {
         Color.colorToHSV(initialColor, hsv);
 
         float density = getResources().getDisplayMetrics().density;
-        int pad = Math.round(20 * density);
+        int pad = Math.round(16 * density);
 
         LinearLayout container = new LinearLayout(this);
         container.setOrientation(LinearLayout.VERTICAL);
         container.setPadding(pad, pad, pad, pad);
+        container.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
+
+        LinearLayout topRow = new LinearLayout(this);
+        topRow.setOrientation(LinearLayout.HORIZONTAL);
+        topRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams topLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        topLp.bottomMargin = Math.round(12 * density);
+        topRow.setLayoutParams(topLp);
 
         View preview = new View(this);
         LinearLayout.LayoutParams previewLp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, Math.round(48 * density));
-        previewLp.bottomMargin = Math.round(10 * density);
+                0, Math.round(40 * density), 1f);
+        previewLp.setMarginEnd(Math.round(12 * density));
         preview.setLayoutParams(previewLp);
 
-        TextView hexText = new TextView(this);
-        hexText.setTextSize(14f);
-        hexText.setPadding(0, 0, 0, Math.round(12 * density));
+        EditText hexInput = new EditText(this);
+        hexInput.setSingleLine(true);
+        hexInput.setTextSize(14f);
+        hexInput.setHint("#RRGGBB");
+        hexInput.setLayoutParams(new LinearLayout.LayoutParams(
+                Math.round(110 * density), LinearLayout.LayoutParams.WRAP_CONTENT));
 
-        TextView hueLabel = new TextView(this);
-        hueLabel.setText("Hue");
-        SeekBar hueBar = new SeekBar(this);
-        hueBar.setMax(360);
-        hueBar.setProgress(Math.round(hsv[0]));
+        topRow.addView(preview);
+        topRow.addView(hexInput);
 
-        TextView satLabel = new TextView(this);
-        satLabel.setText("Saturation");
-        satLabel.setPadding(0, Math.round(8 * density), 0, 0);
-        SeekBar satBar = new SeekBar(this);
-        satBar.setMax(100);
-        satBar.setProgress(Math.round(hsv[1] * 100f));
+        int wheelSize = Math.round(230 * density);
+        ColorWheelView wheel = new ColorWheelView(this);
+        LinearLayout.LayoutParams wheelLp = new LinearLayout.LayoutParams(wheelSize, wheelSize);
+        wheelLp.bottomMargin = Math.round(12 * density);
+        wheel.setLayoutParams(wheelLp);
+        wheel.setHsv(hsv[0], hsv[1], hsv[2]);
 
         TextView valLabel = new TextView(this);
         valLabel.setText("Brightness");
-        valLabel.setPadding(0, Math.round(8 * density), 0, 0);
+        valLabel.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
         SeekBar valBar = new SeekBar(this);
         valBar.setMax(100);
         valBar.setProgress(Math.round(hsv[2] * 100f));
+        valBar.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
+        final boolean[] updatingFromCode = {false};
         Runnable updatePreview = () -> {
+            updatingFromCode[0] = true;
             int color = Color.HSVToColor(hsv);
             GradientDrawable bg = new GradientDrawable();
-            bg.setCornerRadius(8 * density);
+            bg.setCornerRadius(10 * density);
             bg.setColor(color);
             preview.setBackground(bg);
-            hexText.setText(String.format("#%06X", (0xFFFFFF & color)));
-            ThemeHelper.tintSeekBar(hueBar, color);
-            ThemeHelper.tintSeekBar(satBar, color);
+            String hex = String.format("#%06X", (0xFFFFFF & color));
+            if (!hex.equalsIgnoreCase(hexInput.getText().toString().trim())) {
+                hexInput.setText(hex);
+                hexInput.setSelection(hex.length());
+            }
             ThemeHelper.tintSeekBar(valBar, color);
+            updatingFromCode[0] = false;
         };
         updatePreview.run();
 
-        SeekBar.OnSeekBarChangeListener listener = new SeekBar.OnSeekBarChangeListener() {
+        wheel.setOnColorChangedListener((h, s) -> {
+            hsv[0] = h;
+            hsv[1] = s;
+            updatePreview.run();
+        });
+
+        valBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (!fromUser) return;
-                hsv[0] = hueBar.getProgress();
-                hsv[1] = satBar.getProgress() / 100f;
-                hsv[2] = valBar.getProgress() / 100f;
+                hsv[2] = progress / 100f;
+                wheel.setBrightness(hsv[2]);
                 updatePreview.run();
             }
             @Override public void onStartTrackingTouch(SeekBar seekBar) {}
             @Override public void onStopTrackingTouch(SeekBar seekBar) {}
-        };
-        hueBar.setOnSeekBarChangeListener(listener);
-        satBar.setOnSeekBarChangeListener(listener);
-        valBar.setOnSeekBarChangeListener(listener);
+        });
 
-        container.addView(preview);
-        container.addView(hexText);
-        container.addView(hueLabel);
-        container.addView(hueBar);
-        container.addView(satLabel);
-        container.addView(satBar);
+        hexInput.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override
+            public void afterTextChanged(android.text.Editable s) {
+                if (updatingFromCode[0] || s == null) return;
+                String raw = s.toString().trim();
+                if (!raw.startsWith("#")) raw = "#" + raw;
+                if (raw.length() == 7) {
+                    try {
+                        int parsed = Color.parseColor(raw);
+                        Color.colorToHSV(parsed, hsv);
+                        wheel.setHsv(hsv[0], hsv[1], hsv[2]);
+                        valBar.setProgress(Math.round(hsv[2] * 100f));
+                        GradientDrawable bg = new GradientDrawable();
+                        bg.setCornerRadius(10 * density);
+                        bg.setColor(parsed);
+                        preview.setBackground(bg);
+                        ThemeHelper.tintSeekBar(valBar, parsed);
+                    } catch (IllegalArgumentException ignored) {}
+                }
+            }
+        });
+
+        container.addView(topRow);
+        container.addView(wheel);
         container.addView(valLabel);
         container.addView(valBar);
 
