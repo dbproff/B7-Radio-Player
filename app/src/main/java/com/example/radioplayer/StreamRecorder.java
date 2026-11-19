@@ -643,27 +643,31 @@ public final class StreamRecorder {
 
     public static List<RecordedItem> listRecordings(Context context) {
         List<RecordedItem> items = new ArrayList<>();
-        Set<String> seenUris = new HashSet<>();
+        Set<String> seenKeys = new HashSet<>();
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            queryMediaStore(context, MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, items, seenUris);
-            queryMediaStore(context, MediaStore.Downloads.EXTERNAL_CONTENT_URI, items, seenUris);
+            queryMediaStore(context, MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, items, seenKeys);
+            queryMediaStore(context, MediaStore.Downloads.EXTERNAL_CONTENT_URI, items, seenKeys);
         } else {
-            collectLegacyFiles(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), items, seenUris);
-            collectLegacyFiles(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), items, seenUris);
+            collectLegacyFiles(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), items, seenKeys);
+            collectLegacyFiles(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), items, seenKeys);
         }
 
         String customTree = getCustomFolderUri(context);
         if (customTree != null && !customTree.isEmpty()) {
-            queryCustomTree(context, Uri.parse(customTree), items, seenUris);
+            queryCustomTree(context, Uri.parse(customTree), items, seenKeys);
         }
 
         Collections.sort(items, (a, b) -> Long.compare(b.dateAddedMs, a.dateAddedMs));
         return items;
     }
 
+    private static String dedupKey(String name, long sizeBytes) {
+        return (name != null ? name.toLowerCase(Locale.US) : "") + "|" + sizeBytes;
+    }
+
     private static void queryMediaStore(Context context, Uri collection,
-                                        List<RecordedItem> items, Set<String> seenUris) {
+                                        List<RecordedItem> items, Set<String> seenKeys) {
         String[] projection = {
                 MediaStore.MediaColumns._ID,
                 MediaStore.MediaColumns.DISPLAY_NAME,
@@ -687,18 +691,18 @@ public final class StreamRecorder {
             while (cursor.moveToNext()) {
                 long id = cursor.getLong(idCol);
                 Uri itemUri = ContentUris.withAppendedId(collection, id);
-                if (!seenUris.add(itemUri.toString())) continue;
                 String name = cursor.getString(nameCol);
                 long size = cursor.getLong(sizeCol);
                 long dateMs = cursor.getLong(dateCol) * 1000L;
                 String mime = cursor.getString(mimeCol);
                 if (name == null || size <= 0) continue;
+                if (!seenKeys.add(dedupKey(name, size))) continue;
                 items.add(new RecordedItem(name, itemUri, size, dateMs, mime, false));
             }
         } catch (Exception ignored) {}
     }
 
-    private static void collectLegacyFiles(File baseDir, List<RecordedItem> items, Set<String> seenUris) {
+    private static void collectLegacyFiles(File baseDir, List<RecordedItem> items, Set<String> seenKeys) {
         if (baseDir == null) return;
         File dir = new File(baseDir, SUBFOLDER_NAME);
         File[] files = dir.listFiles();
@@ -706,13 +710,13 @@ public final class StreamRecorder {
         for (File f : files) {
             if (!f.isFile() || f.length() <= 0) continue;
             Uri uri = Uri.fromFile(f);
-            if (!seenUris.add(uri.toString())) continue;
+            if (!seenKeys.add(dedupKey(f.getName(), f.length()))) continue;
             items.add(new RecordedItem(f.getName(), uri, f.length(), f.lastModified(), "audio/*", false));
         }
     }
 
     private static void queryCustomTree(Context context, Uri treeUri,
-                                        List<RecordedItem> items, Set<String> seenUris) {
+                                        List<RecordedItem> items, Set<String> seenKeys) {
         try {
             Uri childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(
                     treeUri, DocumentsContract.getTreeDocumentId(treeUri));
@@ -745,9 +749,9 @@ public final class StreamRecorder {
 
                     String docId = cursor.getString(idCol);
                     Uri docUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, docId);
-                    if (!seenUris.add(docUri.toString())) continue;
                     long size = cursor.getLong(sizeCol);
                     long modMs = cursor.getLong(modCol);
+                    if (size <= 0 || !seenKeys.add(dedupKey(name, size))) continue;
                     items.add(new RecordedItem(name, docUri, size, modMs, mime, true));
                 }
             }

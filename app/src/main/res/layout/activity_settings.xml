@@ -114,13 +114,14 @@
                 android:textColor="@color/app_text_primary"
                 android:textSize="14sp" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/settingsCustomColorButton"
-                style="?android:attr/buttonStyle"
+                style="@style/Widget.Material3.Button.OutlinedButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Color Picker..."
-                android:textAllCaps="false" />
+                android:textAllCaps="false"
+                app:cornerRadius="20dp" />
         </LinearLayout>
 
         <HorizontalScrollView
@@ -202,14 +203,15 @@
                 android:maxLines="2"
                 android:ellipsize="middle" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/settingsChooseCaptureFolderButton"
-                style="?android:attr/buttonStyle"
+                style="@style/Widget.Material3.Button.OutlinedButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:text="Choose Folder..."
-                android:textAllCaps="false" />
+                android:textAllCaps="false"
+                app:cornerRadius="20dp" />
         </LinearLayout>
 
         <View
@@ -228,50 +230,55 @@
             android:textStyle="bold"
             android:layout_marginBottom="10dp" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/settingsImportUrlButton"
-            style="?android:attr/buttonStyle"
+            style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:layout_marginBottom="8dp"
             android:text="Import from URL (.m3u / .pls)"
-            android:textAllCaps="false" />
+            android:textAllCaps="false"
+            app:cornerRadius="14dp" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/settingsImportFileButton"
-            style="?android:attr/buttonStyle"
+            style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:layout_marginBottom="8dp"
             android:text="Import File (XML / M3U / PLS)"
-            android:textAllCaps="false" />
+            android:textAllCaps="false"
+            app:cornerRadius="14dp" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/settingsExportFileButton"
-            style="?android:attr/buttonStyle"
+            style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:layout_marginBottom="8dp"
             android:text="Export All Stations (XML)"
-            android:textAllCaps="false" />
+            android:textAllCaps="false"
+            app:cornerRadius="14dp" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/settingsUpdateImagesButton"
-            style="?android:attr/buttonStyle"
+            style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:layout_marginBottom="8dp"
             android:text="Update Station Images"
-            android:textAllCaps="false" />
+            android:textAllCaps="false"
+            app:cornerRadius="14dp" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/settingsScanDeadButton"
-            style="?android:attr/buttonStyle"
+            style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:layout_marginBottom="20dp"
             android:text="Scan for Dead Stations"
-            android:textAllCaps="false" />
+            android:textAllCaps="false"
+            app:cornerRadius="14dp" />
 
         <View
             android:layout_width="match_parent"

@@ -2,6 +2,7 @@ package com.example.radioplayer;
 
 import android.content.Intent;
 import android.content.pm.PackageInfo;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
@@ -22,6 +23,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import com.google.android.material.button.MaterialButton;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -275,6 +277,28 @@ public class SettingsActivity extends AppCompatActivity {
         ThemeHelper.tintRadioButton(captureMusicRadio, accent);
         ThemeHelper.tintRadioButton(captureDownloadsRadio, accent);
         ThemeHelper.tintRadioButton(captureCustomRadio, accent);
+
+        int[] buttonIds = {
+                R.id.settingsCustomColorButton,
+                R.id.settingsChooseCaptureFolderButton,
+                R.id.settingsImportUrlButton,
+                R.id.settingsImportFileButton,
+                R.id.settingsExportFileButton,
+                R.id.settingsUpdateImagesButton,
+                R.id.settingsScanDeadButton
+        };
+        int softBg = (accent & 0x00FFFFFF) | 0x20000000;
+        int textColor = ContextCompat.getColor(this, R.color.app_text_primary);
+        for (int id : buttonIds) {
+            android.view.View v = findViewById(id);
+            if (v instanceof MaterialButton) {
+                MaterialButton btn = (MaterialButton) v;
+                btn.setBackgroundTintList(ColorStateList.valueOf(softBg));
+                btn.setStrokeColor(ColorStateList.valueOf(accent));
+                btn.setStrokeWidth(Math.round(1.5f * getResources().getDisplayMetrics().density));
+                btn.setTextColor(textColor);
+            }
+        }
 
         if (accentPreviewSwatch != null) {
             GradientDrawable circle = new GradientDrawable();
