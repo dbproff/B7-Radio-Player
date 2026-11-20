@@ -5,8 +5,8 @@
     <color name="app_pill_bg">#22FFFFFF</color>
     <color name="app_text_primary">#FFFFFFFF</color>
     <color name="app_text_secondary">#FF888888</color>
-    <color name="app_accent">#FFBB86FC</color>
+    <color name="app_accent">#FF4A8FD9</color>
     <color name="app_divider">#FF333333</color>
-    <color name="app_selected_row">#33FFFFFF</color>
+    <color name="app_selected_row">#334A8FD9</color>
     <color name="app_edit_bg">#22FFFFFF</color>
 </resources>

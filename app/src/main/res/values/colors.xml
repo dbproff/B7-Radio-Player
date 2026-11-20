@@ -13,8 +13,8 @@
     <color name="app_pill_bg">#12000000</color>
     <color name="app_text_primary">#FF121212</color>
     <color name="app_text_secondary">#FF555555</color>
-    <color name="app_accent">#FF6200EE</color>
+    <color name="app_accent">#FF052E4E</color>
     <color name="app_divider">#FFDDDDDD</color>
-    <color name="app_selected_row">#226200EE</color>
+    <color name="app_selected_row">#22052E4E</color>
     <color name="app_edit_bg">#15000000</color>
 </resources>

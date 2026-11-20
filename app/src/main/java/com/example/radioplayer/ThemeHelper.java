@@ -37,7 +37,7 @@ public final class ThemeHelper {
     };
 
     public static final String[] PRESET_NAMES = {
-            "Violet (Default)",
+            "Navy (Default)",
             "Blue",
             "Teal",
             "Green",

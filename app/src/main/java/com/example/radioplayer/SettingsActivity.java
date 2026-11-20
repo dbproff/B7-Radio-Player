@@ -441,7 +441,7 @@ public class SettingsActivity extends AppCompatActivity {
                     setupAccentPresets();
                     applySettingsAccent();
                 })
-                .setNeutralButton("Reset (Violet)", (d, w) -> {
+                .setNeutralButton("Reset (Navy)", (d, w) -> {
                     ThemeHelper.saveAccentColor(this, 0);
                     setupAccentPresets();
                     applySettingsAccent();
