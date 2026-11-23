@@ -66,6 +66,7 @@ import java.util.concurrent.Executors;
     private final Handler retryHandler = new Handler(Looper.getMainLooper());
     private final Handler sleepTimerHandler = new Handler(Looper.getMainLooper());
     private final ExecutorService artworkExecutor = Executors.newSingleThreadExecutor();
+    private final ExecutorService eqExecutor = Executors.newSingleThreadExecutor();
     private long sleepTimerEndTimeMs = 0L;
     private int retryCount = 0;
 
@@ -253,6 +254,9 @@ import java.util.concurrent.Executors;
 
         if (decodedTitle == null || decodedTitle.isEmpty()) return;
 
+        String songDisplay = decodedTitle.trim();
+        if (isInvalidStreamTitle(songDisplay)) return;
+
         String stationName = "";
         if (stations != null) {
             for (RadioStationParser.RadioStation s : stations) {
@@ -266,10 +270,10 @@ import java.util.concurrent.Executors;
             stationName = currentItem.mediaMetadata.title.toString();
         }
 
-        String songDisplay = decodedTitle.trim();
+        String songDisplayFinal = songDisplay;
         MediaMetadata newMetadata = currentItem.mediaMetadata.buildUpon()
-                .setTitle(stationName.isEmpty() ? songDisplay : stationName)
-                .setArtist(stationName.isEmpty() ? "" : songDisplay)
+                .setTitle(stationName.isEmpty() ? songDisplayFinal : stationName)
+                .setArtist(stationName.isEmpty() ? "" : songDisplayFinal)
                 .build();
 
         int currentIndex = player.getCurrentMediaItemIndex();
@@ -278,34 +282,48 @@ import java.util.concurrent.Executors;
         }
     }
 
-    private synchronized void setupAudioEffects(int audioSessionId) {
+    private static boolean isInvalidStreamTitle(String text) {
+        if (text == null) return true;
+        String t = text.trim();
+        if (t.isEmpty()) return true;
+        if (t.startsWith("{") || t.startsWith("[") || t.startsWith("<")) return true;
+        String lower = t.toLowerCase(java.util.Locale.US);
+        return lower.contains("\"status\":")
+                || lower.contains("\"message\":")
+                || lower.contains("\"result\":")
+                || lower.contains("\"error\":");
+    }
+
+    private void setupAudioEffects(int audioSessionId) {
         if (audioSessionId == 0 || audioSessionId == C.AUDIO_SESSION_ID_UNSET) return;
 
-        Log.d(TAG, "Setting up Audio Effects for session: " + audioSessionId);
-        try {
-            if (legacyEqualizer != null) {
-                legacyEqualizer.release();
+        eqExecutor.execute(() -> {
+            Log.d(TAG, "Setting up Audio Effects for session: " + audioSessionId);
+            try {
+                if (legacyEqualizer != null) {
+                    legacyEqualizer.release();
+                    legacyEqualizer = null;
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error releasing old equalizer", e);
+            }
+
+            try {
+                legacyEqualizer = new Equalizer(0, audioSessionId);
+                legacyEqualizer.setEnabled(true);
+                Log.d(TAG, "Equalizer enabled");
+
+                applyEqualizerSettings();
+
+                Intent intent = new Intent(AudioEffect.ACTION_OPEN_AUDIO_EFFECT_CONTROL_SESSION);
+                intent.putExtra(AudioEffect.EXTRA_AUDIO_SESSION, audioSessionId);
+                intent.putExtra(AudioEffect.EXTRA_PACKAGE_NAME, getPackageName());
+                sendBroadcast(intent);
+            } catch (Exception | LinkageError e) {
+                Log.e(TAG, "Failed to initialize Equalizer", e);
                 legacyEqualizer = null;
             }
-        } catch (Exception e) {
-            Log.e(TAG, "Error releasing old equalizer", e);
-        }
-
-        try {
-            legacyEqualizer = new Equalizer(0, audioSessionId);
-            legacyEqualizer.setEnabled(true);
-            Log.d(TAG, "Equalizer enabled");
-
-            applyEqualizerSettings();
-
-            Intent intent = new Intent(AudioEffect.ACTION_OPEN_AUDIO_EFFECT_CONTROL_SESSION);
-            intent.putExtra(AudioEffect.EXTRA_AUDIO_SESSION, audioSessionId);
-            intent.putExtra(AudioEffect.EXTRA_PACKAGE_NAME, getPackageName());
-            sendBroadcast(intent);
-        } catch (Exception | LinkageError e) {
-            Log.e(TAG, "Failed to initialize Equalizer", e);
-            legacyEqualizer = null;
-        }
+        });
     }
 
     private void applyEqualizerSettings() {
@@ -584,6 +602,8 @@ import java.util.concurrent.Executors;
 
     private void skipStation(int delta) {
         if (stations == null || stations.isEmpty() || player == null) return;
+        retryHandler.removeCallbacksAndMessages(null);
+        retryCount = 0;
         MediaItem current = player.getCurrentMediaItem();
         int currentIndex = 0;
         if (current != null) {
@@ -673,11 +693,29 @@ import java.util.concurrent.Executors;
         if (is == null) return null;
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         byte[] data = new byte[4096];
+        int total = 0;
+        int maxBytes = 512 * 1024;
         int nRead;
         while ((nRead = is.read(data, 0, data.length)) != -1) {
+            total += nRead;
+            if (total > maxBytes) {
+                return null;
+            }
             buffer.write(data, 0, nRead);
         }
-        return buffer.toByteArray();
+        byte[] raw = buffer.toByteArray();
+        android.graphics.Bitmap bmp = android.graphics.BitmapFactory.decodeByteArray(raw, 0, raw.length);
+        if (bmp == null) return raw;
+        if (bmp.getWidth() > 256 || bmp.getHeight() > 256) {
+            android.graphics.Bitmap scaled = android.graphics.Bitmap.createScaledBitmap(bmp, 256, 256, true);
+            bmp.recycle();
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            scaled.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, out);
+            scaled.recycle();
+            return out.toByteArray();
+        }
+        bmp.recycle();
+        return raw;
     }
 
     @Override
@@ -685,6 +723,7 @@ import java.util.concurrent.Executors;
         retryHandler.removeCallbacksAndMessages(null);
         sleepTimerHandler.removeCallbacksAndMessages(null);
         artworkExecutor.shutdownNow();
+        eqExecutor.shutdownNow();
         if (mediaLibrarySession != null) { mediaLibrarySession.release(); mediaLibrarySession = null; }
         if (player != null) { player.release(); player = null; }
         if (legacyEqualizer != null) { legacyEqualizer.release(); legacyEqualizer = null; }

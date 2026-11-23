@@ -1199,7 +1199,9 @@ public class MainActivity extends AppCompatActivity {
             displayInfo = getString(R.string.waiting_for_stream);
         }
 
-        if (displayInfo.equalsIgnoreCase(sName) || displayInfo.equalsIgnoreCase(appName) || displayInfo.equalsIgnoreCase("Radio Player")) {
+        if (displayInfo.equalsIgnoreCase(sName) || displayInfo.equalsIgnoreCase(appName)
+                || displayInfo.equalsIgnoreCase("Radio Player")
+                || isInvalidStreamTitle(displayInfo)) {
             displayInfo = getString(R.string.waiting_for_stream);
         }
 
@@ -1211,6 +1213,18 @@ public class MainActivity extends AppCompatActivity {
                 StreamRecorder.getInstance().onSongChanged(finalInfo);
             }
         });
+    }
+
+    private static boolean isInvalidStreamTitle(String text) {
+        if (text == null) return true;
+        String t = text.trim();
+        if (t.isEmpty()) return true;
+        if (t.startsWith("{") || t.startsWith("[") || t.startsWith("<")) return true;
+        String lower = t.toLowerCase(Locale.US);
+        return lower.contains("\"status\":")
+                || lower.contains("\"message\":")
+                || lower.contains("\"result\":")
+                || lower.contains("\"error\":");
     }
 
     private void updateBufferingUI() {
