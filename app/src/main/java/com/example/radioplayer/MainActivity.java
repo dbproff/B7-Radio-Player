@@ -698,7 +698,7 @@ public class MainActivity extends AppCompatActivity {
 
         List<MediaItem> playlist = new ArrayList<>();
         int startIndex = 0;
-        for (int i = 0; i < recordedItems.size(); i++) {
+        for (int i = recordedItems.size() - 1; i >= 0; i--) {
             StreamRecorder.RecordedItem r = recordedItems.get(i);
             if (r == null || r.uri == null) continue;
             if (r.uri.equals(item.uri)) {
