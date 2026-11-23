@@ -695,16 +695,28 @@ public class MainActivity extends AppCompatActivity {
         if (item == null || item.uri == null || mediaController == null) return;
         currentStation = null;
         currentRecordedUri = item.uri;
-        MediaMetadata meta = new MediaMetadata.Builder()
-                .setTitle(item.displayName)
-                .setArtist("Recorded Stream")
-                .build();
-        MediaItem mediaItem = new MediaItem.Builder()
-                .setMediaId("recorded:" + item.uri)
-                .setUri(item.uri)
-                .setMediaMetadata(meta)
-                .build();
-        mediaController.setMediaItem(mediaItem);
+
+        List<MediaItem> playlist = new ArrayList<>();
+        int startIndex = 0;
+        for (int i = 0; i < recordedItems.size(); i++) {
+            StreamRecorder.RecordedItem r = recordedItems.get(i);
+            if (r == null || r.uri == null) continue;
+            if (r.uri.equals(item.uri)) {
+                startIndex = playlist.size();
+            }
+            MediaMetadata meta = new MediaMetadata.Builder()
+                    .setTitle(r.displayName)
+                    .setArtist("Recorded Stream • " + StreamRecorder.formatSize(r.sizeBytes))
+                    .build();
+            playlist.add(new MediaItem.Builder()
+                    .setMediaId("recorded:" + r.uri)
+                    .setUri(r.uri)
+                    .setMediaMetadata(meta)
+                    .build());
+        }
+        if (playlist.isEmpty()) return;
+
+        mediaController.setMediaItems(playlist, startIndex, 0L);
         mediaController.prepare();
         mediaController.play();
         if (currentStationView != null) {
@@ -713,9 +725,7 @@ public class MainActivity extends AppCompatActivity {
         if (songTitleView != null) {
             songTitleView.setText("Recorded Stream • " + StreamRecorder.formatSize(item.sizeBytes));
         }
-        if (nowPlayingThumb != null) {
-            setNowPlayingThumbVisible(false);
-        }
+        setNowPlayingThumbVisible(false);
         if (stationAdapter != null) stationAdapter.notifyDataSetChanged();
         if (recordedAdapter != null) recordedAdapter.notifyDataSetChanged();
     }
@@ -1129,7 +1139,17 @@ public class MainActivity extends AppCompatActivity {
     private void syncCurrentStation(@Nullable MediaItem mediaItem) {
         if (mediaItem != null && mediaItem.mediaId.startsWith("recorded:")) {
             currentStation = null;
+            String uriStr = mediaItem.mediaId.substring("recorded:".length());
+            currentRecordedUri = Uri.parse(uriStr);
+            if (currentStationView != null && mediaItem.mediaMetadata.title != null) {
+                currentStationView.setText(mediaItem.mediaMetadata.title.toString());
+            }
+            if (songTitleView != null && mediaItem.mediaMetadata.artist != null) {
+                songTitleView.setText(mediaItem.mediaMetadata.artist.toString());
+            }
             setNowPlayingThumbVisible(false);
+            if (stationAdapter != null) stationAdapter.notifyDataSetChanged();
+            if (recordedAdapter != null) recordedAdapter.notifyDataSetChanged();
             return;
         }
         if (mediaItem != null && allStations != null) {
@@ -1265,6 +1285,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void playNext() {
+        if (currentRecordedUri != null && mediaController != null && mediaController.getMediaItemCount() > 1) {
+            int count = mediaController.getMediaItemCount();
+            int nextIdx = (mediaController.getCurrentMediaItemIndex() + 1) % count;
+            mediaController.seekTo(nextIdx, 0L);
+            mediaController.play();
+            return;
+        }
         if (displayedStations.isEmpty()) return;
         int nextIndex = 0;
         if (currentStation != null) {
@@ -1283,6 +1310,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void playPrevious() {
+        if (currentRecordedUri != null && mediaController != null && mediaController.getMediaItemCount() > 1) {
+            int count = mediaController.getMediaItemCount();
+            int prevIdx = (mediaController.getCurrentMediaItemIndex() - 1 + count) % count;
+            mediaController.seekTo(prevIdx, 0L);
+            mediaController.play();
+            return;
+        }
         if (displayedStations.isEmpty()) return;
         int prevIndex = displayedStations.size() - 1;
         if (currentStation != null) {

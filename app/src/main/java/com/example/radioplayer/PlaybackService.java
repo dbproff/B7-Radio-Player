@@ -601,10 +601,18 @@ import java.util.concurrent.Executors;
     }
 
     private void skipStation(int delta) {
-        if (stations == null || stations.isEmpty() || player == null) return;
+        if (player == null) return;
+        MediaItem current = player.getCurrentMediaItem();
+        if (current != null && current.mediaId.startsWith("recorded:") && player.getMediaItemCount() > 1) {
+            int count = player.getMediaItemCount();
+            int nextIdx = (player.getCurrentMediaItemIndex() + delta + count) % count;
+            player.seekTo(nextIdx, 0L);
+            player.play();
+            return;
+        }
+        if (stations == null || stations.isEmpty()) return;
         retryHandler.removeCallbacksAndMessages(null);
         retryCount = 0;
-        MediaItem current = player.getCurrentMediaItem();
         int currentIndex = 0;
         if (current != null) {
             for (int i = 0; i < stations.size(); i++) {
